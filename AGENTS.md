@@ -20,6 +20,7 @@ When old-code behavior matters:
 - ALWAYS use `bun`.
 - ALWAYS use `bun install` to add packages.
 - ALWAYS read `ARCHITECTURE.md` before changing `src/`.
+- STOP in the middle of implementation if you're stuck or unsure about something. Get back to me and clear your doubts.
 
 ## Agent skills
 
