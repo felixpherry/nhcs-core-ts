@@ -41,9 +41,9 @@ modules/authentication/
   components/
     authentication-form.tsx
   authentication-page.tsx
-  authentication.schema.ts
+  authentication.functions.ts
   authentication.server.ts
-  authentication.service.ts
+  authentication.schema.ts
   authentication.types.ts
 ```
 
@@ -55,9 +55,8 @@ modules/pcn/
     components/
       pcn-form.tsx
       pcn-status-badge.tsx
+    pcn.functions.ts
     pcn.server.ts
-    pcn.service.ts
-    pcn.repository.ts
     pcn.schema.ts
     pcn.types.ts
     pcn-query-keys.ts
@@ -93,8 +92,8 @@ modules/{module}/{slice}/hooks/
 Prefer flat one-file categories:
 
 ```txt
+authentication.functions.ts
 authentication.server.ts
-authentication.service.ts
 authentication.schema.ts
 authentication.types.ts
 ```
@@ -102,8 +101,8 @@ authentication.types.ts
 Avoid early category folders:
 
 ```txt
+functions/authentication.functions.ts
 server/authentication.server.ts
-services/authentication.service.ts
 schemas/authentication.schema.ts
 types/authentication.types.ts
 ```
@@ -111,12 +110,14 @@ types/authentication.types.ts
 ## Server Function Flow
 
 ```txt
-createServerFn -> validate -> require user/session -> call service -> return result
+.functions.ts: createServerFn -> validate -> require user/session -> call .server.ts implementation -> return result
+.server.ts: Backend Boundary / DB / external API / server-only implementation
 ```
 
 Good split:
 
 ```txt
+pcn.functions.ts
 pcn.server.ts
 pcn-query-keys.ts
 ```
@@ -124,7 +125,8 @@ pcn-query-keys.ts
 Bad split:
 
 ```txt
-pcn.server.ts  # exports server fns and query keys
+pcn.server.ts     # exports server functions imported by client code
+pcn.functions.ts  # exports server fns and query keys
 ```
 
 ## Shared

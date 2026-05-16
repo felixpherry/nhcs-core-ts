@@ -103,6 +103,7 @@ This gives feature migration a stable interface: modules call typed server funct
 - Phase 4 confirmed the Legacy Cookies compatibility details in `.scratch/backend-boundary-app-session/legacy-cookies-compatibility.md`.
 - Phase 5 added Legacy Cookies fallback inside the App Session boundary.
 - Phase 6 added `api.private` with local missing-session failure and centralized Backend Session Header derivation.
+- Phase 7 added the first typed module-facing TanStack Start server function for authentication menus through the Backend Boundary.
 - Shared Platform glossary terms are documented in the context map and shared context documentation.
 - The old apps show that the backend uses `result` for most payloads, `result.data` for list wrappers, and top-level `data` for transformed authentication responses.
 - The backend status contract is intentionally handled as a compatibility layer because HTTP status alone is not a reliable success signal.

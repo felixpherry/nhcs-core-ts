@@ -29,8 +29,8 @@ Tradeoff: promoting code to shared too early creates vague abstractions. Prefer 
 
 Do not force identical folder trees across modules. Start with searchable flat files for one-file categories:
 
+- `{module}.functions.ts`
 - `{module}.server.ts`
-- `{module}.service.ts`
 - `{module}.schema.ts`
 - `{module}.types.ts`
 
@@ -42,22 +42,22 @@ Large modules split by workflow/slice (`list`, `approval`) instead of technical 
 
 Tradeoff: shared code between sibling slices moves to `modules/{module}/shared/`.
 
-## Server files are boundaries
+## Server functions are boundaries
 
-`.server.ts` files expose server functions and handle boundary concerns:
+`.functions.ts` files expose TanStack Start server functions and handle network-boundary concerns while staying safe to import from client code:
 
 - validation wiring
 - session/current-user extraction
-- service calls
+- calls into server-only implementation
 - expected error mapping
 
-Business/use-case logic belongs in `{module}.service.ts`. DB or external API details belong in `{module}.repository.ts`.
+Server-only implementation belongs in `{module}.server.ts`. Backend Boundary, DB, and external API details stay behind that server-only file.
 
-Tradeoff: start with one cohesive server file. Split when it exceeds roughly 200–300 lines, mixes permissions/schemas/tests, or causes merge/agent conflicts.
+Tradeoff: start with one cohesive server implementation file. Split into named `*.server.ts` peers when it exceeds roughly 200–300 lines, mixes unrelated use cases, or causes merge/agent conflicts.
 
 ## Query keys are client-safe
 
-Never mix client-safe query keys with server-only functions.
+Never mix client-safe query keys with server functions or server-only implementation.
 
 Reason: import boundaries become unclear and client bundles can accidentally touch server-only code.
 

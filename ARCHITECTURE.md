@@ -55,9 +55,9 @@ Small modules stay flat:
 ```txt
 modules/authentication/
   authentication-page.tsx
-  authentication.schema.ts
+  authentication.functions.ts
   authentication.server.ts
-  authentication.service.ts
+  authentication.schema.ts
   authentication.types.ts
 ```
 
@@ -71,19 +71,21 @@ Folder when there is pressure.
 shared/ means shared only by child slices inside the module.
 ```
 
-### Server files are boundaries
+### Server functions are boundaries
 
-`.server.ts` flow:
+`.functions.ts` files export TanStack Start server functions and are safe to import from client code.
+
+`.functions.ts` flow:
 
 ```txt
-createServerFn -> validate -> require user/session -> call service -> return result
+createServerFn -> validate -> require user/session -> call server-only implementation -> return result
 ```
 
-Business/use-case logic goes in `{module}.service.ts`.
+Server-only implementation goes in `{module}.server.ts` and is imported only inside server function handlers.
 
-DB/external API details go in `{module}.repository.ts`.
+DB/external API/Backend Boundary details stay server-only; split to named `*.server.ts` files only when pressure exists.
 
-Never mix client-safe query keys with server-only functions.
+Never mix client-safe query keys with server-only implementation.
 
 ### Shared stays honest
 
