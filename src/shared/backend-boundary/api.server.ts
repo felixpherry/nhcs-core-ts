@@ -109,7 +109,7 @@ async function publicJson<TPayload = unknown>(
 
 	if (response.status >= 500) {
 		throw new ApiServerDownError(
-			getBackendMessage(envelope, "Internal Server Error."),
+			getBackendMessage(envelope, "Internal server error."),
 			{ envelope, status: response.status },
 		);
 	}

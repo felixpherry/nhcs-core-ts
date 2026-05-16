@@ -4,6 +4,7 @@ import { z } from "zod";
 export const env = createEnv({
 	server: {
 		API_BASE_URL: z.url(),
+		NHCS_SESSION_SECRET: z.string().min(32).optional(),
 	},
 
 	/**

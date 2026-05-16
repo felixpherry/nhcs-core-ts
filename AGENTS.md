@@ -5,7 +5,7 @@ Design system reference: `~/dev/NHCS_ESS_MSS/`.
 Before making migration decisions:
 - Explore the old repo first.
 - Explore the design system repo if it's UI-related.
-- Spawn subagents when useful.
+- Spawn subagents when exploring unless you have a very strong reason to see the repo yourself.
 - Understand behavior, flows, edge cases, and business rules.
 
 Do **not** blindly copy architecture, patterns, abstractions, or technical decisions from the old "crap" repo. Treat it as behavior reference, not design reference.
