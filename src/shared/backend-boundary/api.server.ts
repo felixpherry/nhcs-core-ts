@@ -1,31 +1,41 @@
-import queryString, { type StringifiableRecord } from "query-string";
 import { env } from "#/env";
+import {
+	ApiBusinessError,
+	ApiForbiddenError,
+	ApiServerDownError,
+	ApiSessionExpiredError,
+	ApiUnknownError,
+	ApiValidationError,
+} from "./api.errors";
+import type {
+	BackendEnvelope,
+	JsonHttpMethod,
+	PublicJsonOptions,
+	PublicJsonPostOptions,
+} from "./api.types";
+import {
+	buildBackendUrl,
+	buildJsonHeaders,
+	extractBackendPayload,
+	getBackendMessage,
+} from "./api.utils";
 
-export type JsonValue =
-	| string
-	| number
-	| boolean
-	| null
-	| JsonValue[]
-	| { [key: string]: JsonValue };
-
-export type PublicJsonQuery = StringifiableRecord;
-
-export type PublicJsonOptions = Omit<RequestInit, "body" | "method"> & {
-	query?: PublicJsonQuery;
-};
-
-export type PublicJsonPostOptions = PublicJsonOptions & {
-	body?: JsonValue;
-};
-
-// TODO: Move to separate file and export it. Type is also incomplete
-type BackendEnvelope = {
-	result?: unknown;
-	data?: unknown;
-};
-
-type JsonHttpMethod = "GET" | "POST";
+export {
+	ApiBusinessError,
+	ApiForbiddenError,
+	ApiServerDownError,
+	ApiSessionExpiredError,
+	ApiUnknownError,
+	ApiValidationError,
+} from "./api.errors";
+export type {
+	ApiErrorDiagnostics,
+	BackendEnvelope,
+	JsonValue,
+	PublicJsonOptions,
+	PublicJsonPostOptions,
+	PublicJsonQuery,
+} from "./api.types";
 
 export const api = {
 	public: {
@@ -46,96 +56,70 @@ async function publicJson<TPayload = unknown>(
 	options: PublicJsonPostOptions = {},
 ): Promise<TPayload> {
 	const { body, headers, query, ...fetchOptions } = options;
-	const response = await fetch(buildBackendUrl(backendPath, query), {
-		...fetchOptions,
-		method,
-		headers: buildJsonHeaders(headers),
-		body: body === undefined ? undefined : JSON.stringify(body),
-	});
+	const url = buildBackendUrl(env.API_BASE_URL, backendPath, query);
+	let response: Response;
 
-	const envelope = (await response.json()) as BackendEnvelope;
+	try {
+		response = await fetch(url, {
+			...fetchOptions,
+			method,
+			headers: buildJsonHeaders(headers),
+			body: body === undefined ? undefined : JSON.stringify(body),
+		});
+	} catch (networkError) {
+		throw new ApiServerDownError(
+			"Unable to reach backend service.",
+			{ networkError },
+			{ cause: networkError },
+		);
+	}
+
+	const envelope = (await response.json()) as BackendEnvelope<TPayload>;
+
+	if (envelope.isGranted === false) {
+		throw new ApiSessionExpiredError(
+			getBackendMessage(envelope, "Backend session expired."),
+			{ envelope, status: response.status },
+		);
+	}
+
+	if (response.status === 200 && envelope.isSuccess === false) {
+		throw new ApiBusinessError(
+			getBackendMessage(
+				envelope,
+				"Backend rejected request without an error message.",
+			),
+			{ envelope, status: response.status },
+		);
+	}
+
+	if (response.status === 400) {
+		throw new ApiValidationError(
+			getBackendMessage(envelope, "Backend request validation failed."),
+			{ envelope, status: response.status },
+		);
+	}
+
+	if (response.status === 403) {
+		throw new ApiForbiddenError(
+			getBackendMessage(envelope, "Forbidden Access."),
+			{ envelope, status: response.status },
+		);
+	}
+
+	if (response.status >= 500) {
+		throw new ApiServerDownError(
+			getBackendMessage(envelope, "Internal Server Error."),
+			{ envelope, status: response.status },
+		);
+	}
+
+	if (response.status !== 200) {
+		throw new ApiUnknownError(
+			getBackendMessage(envelope, "Backend returned unknown API behavior."),
+			{ envelope, status: response.status },
+		);
+	}
 
 	return extractBackendPayload(envelope) as TPayload;
-}
-
-export function buildBackendUrl(
-	backendPath: string,
-	query?: PublicJsonQuery,
-): string {
-	assertRelativeBackendPath(backendPath);
-
-	const baseUrl = env.API_BASE_URL.endsWith("/")
-		? env.API_BASE_URL
-		: `${env.API_BASE_URL}/`;
-	const pathWithQuery = queryString.stringifyUrl({ url: backendPath, query });
-	const path = pathWithQuery.startsWith("/")
-		? pathWithQuery.slice(1)
-		: pathWithQuery;
-
-	return new URL(path, baseUrl).toString();
-}
-
-export function extractBackendPayload(envelope: BackendEnvelope): unknown {
-	if (Object.hasOwn(envelope, "result")) {
-		// TODO: Usually .result.data
-		return envelope.result;
-	}
-
-	return envelope.data;
-}
-
-function assertRelativeBackendPath(backendPath: string): void {
-	if (backendPath.trim() !== backendPath || backendPath.length === 0) {
-		throw new Error("Backend path must be a non-empty relative path.");
-	}
-
-	if (backendPath.startsWith("//")) {
-		throw new Error("Backend path must be relative, not protocol-relative.");
-	}
-
-	if (hasParentPathSegment(backendPath)) {
-		throw new Error("Backend path must not contain parent directory segments.");
-	}
-
-	try {
-		const parsedUrl = new URL(backendPath);
-		if (parsedUrl.protocol) {
-			throw new Error("Backend path must be relative, not absolute.");
-		}
-	} catch (error) {
-		if (error instanceof TypeError) {
-			return;
-		}
-
-		throw error;
-	}
-}
-
-function hasParentPathSegment(backendPath: string): boolean {
-	const [path = ""] = backendPath.split(/[?#]/);
-
-	return path.split("/").some((segment) => decodePathSegment(segment) === "..");
-}
-
-function decodePathSegment(segment: string): string {
-	try {
-		return decodeURIComponent(segment);
-	} catch {
-		return segment;
-	}
-}
-
-// TODO: Extract to different file
-function buildJsonHeaders(headers: PublicJsonOptions["headers"]): Headers {
-	const jsonHeaders = new Headers(headers);
-
-	if (!jsonHeaders.has("accept")) {
-		jsonHeaders.set("accept", "application/json");
-	}
-
-	if (!jsonHeaders.has("content-type")) {
-		jsonHeaders.set("content-type", "application/json");
-	}
-
-	return jsonHeaders;
 }
