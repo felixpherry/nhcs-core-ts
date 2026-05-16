@@ -1,27 +1,22 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { z } from "zod";
 import { env } from "#/env";
-import type { AppSession } from "./app-session.types";
+import type { AppSession } from "../app-session.types";
+import { parseAppSession, safeParseAppSession } from "./app-session-schema";
 
 const signedCookieSeparator = ".";
 
-const appSessionSchema = z.object({
-	accessId: nonEmptyString(),
-	accessToken: nonEmptyString(),
-	userId: nonEmptyString(),
-	userLevel: nonEmptyString(),
-});
-
+/** Serializes, validates, and signs normalized App Session for app-owned cookie storage. */
 export function createSignedAppSessionCookieValue(
 	appSession: AppSession,
 ): string {
-	const parsedSession = appSessionSchema.parse(appSession);
+	const parsedSession = parseAppSession(appSession);
 	const payload = encodeBase64Url(JSON.stringify(parsedSession));
 	const signature = signCookiePayload(payload, requireSessionSecret());
 
 	return `${payload}${signedCookieSeparator}${signature}`;
 }
 
+/** Verifies app-owned cookie value and returns normalized App Session when valid. */
 export function readSignedAppSessionCookieValue(
 	cookieValue: string,
 ): AppSession | null {
@@ -39,44 +34,19 @@ export function readSignedAppSessionCookieValue(
 
 	try {
 		const parsedJson = JSON.parse(decodeBase64Url(payload));
-		const parsedSession = appSessionSchema.safeParse(parsedJson);
 
-		return parsedSession.success ? parsedSession.data : null;
+		return safeParseAppSession(parsedJson);
 	} catch {
 		return null;
 	}
 }
 
-export function getCookieValue(
-	cookieHeader: string | null | undefined,
-	cookieName: string,
-): string | undefined {
-	if (!cookieHeader) {
-		return undefined;
-	}
-
-	for (const rawCookie of cookieHeader.split(";")) {
-		const cookie = rawCookie.trim();
-		const separatorIndex = cookie.indexOf("=");
-
-		if (separatorIndex === -1) {
-			continue;
-		}
-
-		const name = decodeCookiePart(cookie.slice(0, separatorIndex));
-
-		if (name === cookieName) {
-			return decodeCookiePart(cookie.slice(separatorIndex + 1));
-		}
-	}
-
-	return undefined;
-}
-
+/** Signs encoded cookie payload with configured App Session secret. */
 function signCookiePayload(payload: string, secret: string): string {
 	return createHmac("sha256", secret).update(payload).digest("base64url");
 }
 
+/** Compares provided cookie signature against expected HMAC without timing leak. */
 function hasValidSignature(
 	payload: string,
 	signature: string,
@@ -89,6 +59,7 @@ function hasValidSignature(
 	return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
+/** Reads required App Session secret or fails fast during session cookie work. */
 function requireSessionSecret(): string {
 	const secret = env.NHCS_SESSION_SECRET;
 
@@ -99,22 +70,12 @@ function requireSessionSecret(): string {
 	return secret;
 }
 
-function decodeCookiePart(part: string): string {
-	try {
-		return decodeURIComponent(part);
-	} catch {
-		return part;
-	}
-}
-
+/** Encodes text as base64url for cookie-safe payload storage. */
 function encodeBase64Url(value: string): string {
 	return Buffer.from(value, "utf8").toString("base64url");
 }
 
+/** Decodes base64url cookie payload back to text. */
 function decodeBase64Url(value: string): string {
 	return Buffer.from(value, "base64url").toString("utf8");
-}
-
-function nonEmptyString() {
-	return z.string().refine((value) => value.trim().length > 0);
 }

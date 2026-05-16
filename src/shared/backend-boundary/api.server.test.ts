@@ -9,7 +9,7 @@ import {
 	ApiValidationError,
 } from "./api.errors";
 import { api } from "./api.server";
-import { buildBackendUrl } from "./api.utils";
+import { buildBackendUrl } from "./utils/backend-url";
 
 describe("api.public", () => {
 	afterEach(() => {
@@ -277,6 +277,7 @@ describe("buildBackendUrl", () => {
 	});
 });
 
+/** Captures thrown API error from async call for assertions. */
 async function catchApiError(call: () => Promise<unknown>): Promise<unknown> {
 	try {
 		await call();
@@ -287,6 +288,7 @@ async function catchApiError(call: () => Promise<unknown>): Promise<unknown> {
 	throw new Error("Expected API call to throw.");
 }
 
+/** Stubs global fetch with JSON Backend Envelope response. */
 function mockJsonFetch(envelope: unknown, init?: ResponseInit) {
 	const fetchMock = vi
 		.fn()
@@ -295,6 +297,7 @@ function mockJsonFetch(envelope: unknown, init?: ResponseInit) {
 	return fetchMock;
 }
 
+/** Reads first URL passed to mocked fetch call. */
 function getCalledFetchUrl(fetchMock: ReturnType<typeof mockJsonFetch>) {
 	const fetchUrl = fetchMock.mock.calls[0]?.[0];
 
@@ -305,6 +308,7 @@ function getCalledFetchUrl(fetchMock: ReturnType<typeof mockJsonFetch>) {
 	return new URL(fetchUrl);
 }
 
+/** Ensures URL string ends with slash for stable URL resolution in tests. */
 function ensureTrailingSlash(url: string) {
 	return url.endsWith("/") ? url : `${url}/`;
 }

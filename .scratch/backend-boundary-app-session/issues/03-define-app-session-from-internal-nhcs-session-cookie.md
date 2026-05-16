@@ -23,7 +23,7 @@ None - can start immediately
 ## Comments
 
 - Phase 3 implemented in `src/shared/app-session/app-session.server.ts` with normalized `AppSession` type in `src/shared/app-session/app-session.types.ts`.
-- Internal `nhcs_session` values are signed as base64url JSON plus HMAC-SHA256 signature and validated through `src/shared/app-session/app-session.utils.ts` before returning an App Session.
+- Internal `nhcs_session` values are signed as base64url JSON plus HMAC-SHA256 signature and validated through `src/shared/app-session/utils/signed-app-session-cookie.server.ts` before returning an App Session.
 - App Session currently captures `accessToken`, `userId`, `accessId`, and `userLevel`, matching old NHCS header derivation behavior for later Backend Session Headers.
 - Added `NHCS_SESSION_SECRET` to environment schema and `.env.example` for the app-owned cookie signing secret.
 - Tests cover valid internal session, missing cookie, invalid cookie, and tampered cookie behavior.
