@@ -22,7 +22,7 @@ None - can start immediately
 
 ## Comments
 
-- Phase 1 implemented in `src/shared/backend-boundary/api.server.ts` with focused tests in `src/shared/backend-boundary/api.server.test.ts`.
+- Phase 1 implemented in `src/shared/platform/backend-boundary/api.server.ts` with focused tests in `src/shared/platform/backend-boundary/api.server.test.ts`.
 - Public API narrowed to `api.public.get` and `api.public.post` because backend only uses GET/POST.
 - Public API now takes exactly `(backendPath, options?)`; `options.query` merges query params with the URL via `query-string`, and POST JSON body lives at `options.body`.
 - After checking old NHCS Core and ESS/MSS APIs, backend boundary file was made server-only (`api.server.ts`) and parent path segments were rejected so relative paths cannot escape `API_BASE_URL` path prefixes.

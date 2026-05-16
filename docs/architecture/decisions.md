@@ -20,7 +20,8 @@ Tradeoff: small modules can stay flat. Large modules can split into child slices
 
 - Generic UI primitives go in `shared/components/ui`.
 - App-wide composed components go in `shared/components`.
-- Reusable domain-aware code used by multiple modules goes in `shared/{domain}`.
+- Reusable business/domain code used by multiple modules goes in `shared/{domain}`.
+- Cross-cutting app infrastructure seams go in `shared/platform/{concept}`.
 
 Tradeoff: promoting code to shared too early creates vague abstractions. Prefer module-local first.
 
@@ -60,13 +61,34 @@ Never mix client-safe query keys with server-only functions.
 
 Reason: import boundaries become unclear and client bundles can accidentally touch server-only code.
 
+## Contract-first shared boundaries
+
+Some shared platform modules are cross-module seams with a small caller interface and noisy implementation mechanics. For these, use a contract-first shape:
+
+```txt
+shared/platform/{concept}/
+  {concept}.contract.ts
+  {concept}.server.ts
+  {concept}.types.ts
+  {concept}.errors.ts
+  implementation/
+```
+
+`*.contract.ts` documents the caller interface, invariants, and error modes. `*.server.ts` stays as the tiny exported adapter. `implementation/` holds module-local mechanics that reviewers can skip unless debugging.
+
+Reason: reviewers should be able to inspect the interface without reading cookie parsing, envelope mapping, URL safety, or similar mechanical code.
+
+Tradeoff: this adds files. Use it only when the shared module is important enough that a clean review surface is valuable. Small modules should stay flat.
+
 ## `lib` vs `utils`
 
 `shared/lib` holds configured app/library code, clients, adapters, and setup.
 
 `shared/utils` holds pure helper functions.
 
-Reason: configured things have environment/framework coupling; utilities should stay portable and easy to test.
+`shared/platform/{concept}/implementation` holds module-local mechanics for that platform module. These helpers may be infrastructure-aware or server-only when the parent platform module owns that concern.
+
+Reason: configured things have environment/framework coupling; global utilities should stay portable and easy to test. Module-local implementation files exist to keep the parent module's review surface clean without promoting mechanics to global `shared/utils`.
 
 ## Import boundaries
 
@@ -93,7 +115,7 @@ modules/pcn -> modules/leave-and-absence
 modules/pcn/list -> modules/pcn/approval
 ```
 
-If two modules need same code, move it to `shared/{domain}`. If two sibling slices need same code, move it to `modules/{module}/shared`.
+If two modules need same business code, move it to `shared/{domain}`. If two modules need same infrastructure seam, move it to `shared/platform/{concept}`. If two sibling slices need same code, move it to `modules/{module}/shared`.
 
 ## Decision rules
 
@@ -104,8 +126,14 @@ Used by one slice only?
 Used by sibling slices in same module?
 -> modules/{module}/shared/
 
-Used by multiple top-level modules?
+Used by multiple top-level modules as business/domain code?
 -> shared/{domain}/
+
+Used by multiple top-level modules as infrastructure seam?
+-> shared/platform/{concept}/
+
+Shared platform seam with noisy mechanics?
+-> shared/platform/{concept}/{concept}.contract.ts + {concept}.server.ts + implementation/
 
 Generic UI primitive?
 -> shared/components/ui/

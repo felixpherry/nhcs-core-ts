@@ -1,5 +1,8 @@
 import type { BackendBoundary } from "./api.contract";
-import { publicJsonGet, publicJsonPost } from "./utils/public-json.server";
+import {
+	publicJsonGet,
+	publicJsonPost,
+} from "./implementation/public-json.server";
 
 export type { BackendBoundary } from "./api.contract";
 export {

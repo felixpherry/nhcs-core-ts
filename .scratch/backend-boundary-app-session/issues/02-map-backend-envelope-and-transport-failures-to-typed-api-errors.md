@@ -22,9 +22,9 @@ Extend the Backend Boundary so backend failure modes become typed errors. Server
 
 ## Comments
 
-- Phase 2 implemented in `src/shared/backend-boundary/api.server.ts`.
+- Phase 2 implemented in `src/shared/platform/backend-boundary/api.server.ts`.
 - Added exported typed API errors: `ApiBusinessError`, `ApiSessionExpiredError`, `ApiValidationError`, `ApiForbiddenError`, `ApiServerDownError`, and `ApiUnknownError`.
 - Each API error exposes `kind` and `diagnostics`; diagnostics preserve HTTP status, raw Backend Envelope, and network failure cause when available.
-- Failure mapping tests live in `src/shared/backend-boundary/api.server.test.ts`.
+- Failure mapping tests live in `src/shared/platform/backend-boundary/api.server.test.ts`.
 - Review follow-up: `BackendEnvelope<TPayload>` and API error diagnostics now type known envelope fields and payload generically; network failures use a reachability-neutral message; all HTTP `5xx` statuses map to server-down with `Internal server error.` fallback.
-- Refactor follow-up: `api.contract.ts` documents the Backend Boundary interface, `api.server.ts` stays as the tiny exported adapter, implementation mechanics live under `src/shared/backend-boundary/utils/`, and runtime API error classes live in `api.errors.ts`.
+- Refactor follow-up: `api.contract.ts` documents the Backend Boundary interface, `api.server.ts` stays as the tiny exported adapter, implementation mechanics live under `src/shared/platform/backend-boundary/implementation/`, and runtime API error classes live in `api.errors.ts`.

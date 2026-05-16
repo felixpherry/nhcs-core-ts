@@ -2,8 +2,8 @@ import type {
 	CreateAppSessionCookieValue,
 	GetAppSession,
 } from "./app-session.contract";
-import { readAppSession } from "./utils/read-app-session.server";
-import { createSignedAppSessionCookieValue } from "./utils/signed-app-session-cookie.server";
+import { readAppSession } from "./implementation/read-app-session.server";
+import { createSignedAppSessionCookieValue } from "./implementation/signed-app-session-cookie.server";
 
 export type {
 	CreateAppSessionCookieValue,

@@ -9,7 +9,7 @@ import {
 	ApiValidationError,
 } from "./api.errors";
 import { api } from "./api.server";
-import { buildBackendUrl } from "./utils/backend-url";
+import { buildBackendUrl } from "./implementation/backend-url";
 
 describe("api.public", () => {
 	afterEach(() => {

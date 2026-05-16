@@ -89,11 +89,31 @@ Never mix client-safe query keys with server-only functions.
 
 - `shared/components/ui` = shadcn/generic UI primitives
 - `shared/components` = app-wide composed components only
-- `shared/{domain}` = reusable domain-aware code used by multiple modules
+- `shared/{domain}` = reusable business/domain code used by multiple modules
+- `shared/platform/{concept}` = cross-cutting app infrastructure seams
 - `shared/lib` = configured app/library code, clients, adapters, setup
 - `shared/utils` = pure helper functions
 
 Do not put domain-specific code in `shared/components`.
+
+Shared platform modules with noisy mechanics may expose a contract-first shape:
+
+```txt
+shared/platform/{concept}/
+  {concept}.contract.ts  # review surface: interface, invariants, error modes
+  {concept}.server.ts    # tiny exported adapter / wiring
+  {concept}.types.ts
+  {concept}.errors.ts    # when caller-visible errors exist
+  implementation/        # module-local implementation mechanics
+```
+
+Rules:
+
+- `*.contract.ts` is what reviewers read first.
+- `*.server.ts` should stay boring and small.
+- `implementation/` inside `shared/platform/{concept}` is module-local, not generic `shared/utils`.
+- Prefer named implementation files (`backend-url.ts`) over vague files (`utils.ts`, `helpers.ts`).
+- Do not force contracts for small modules that remain easy to scan.
 
 ### Tests colocate
 
@@ -121,7 +141,8 @@ module -> another module
 sibling slice -> sibling slice
 ```
 
-If two modules need same thing, move it to `shared/{domain}`.
+If two modules need same business concept, move it to `shared/{domain}`.
+If two modules need same infrastructure seam, move it to `shared/platform/{concept}`.
 If two sibling slices need same thing, move it to `modules/{module}/shared`.
 
 ### Names are searchable
@@ -147,6 +168,7 @@ table.tsx
 Keep routes thin.
 Keep modules business-focused.
 Keep shared honest.
+Use contracts for noisy shared seams.
 Colocate tests.
 Prefer searchable filenames.
 Do not force identical folder trees.

@@ -1,6 +1,6 @@
 # Shared Platform
 
-Cross-module platform language for backend access, auth/session handling, and reusable app infrastructure.
+Cross-module platform language for backend access, auth/session handling, and reusable app infrastructure. Platform seams live under `src/shared/platform/`.
 
 ## Language
 

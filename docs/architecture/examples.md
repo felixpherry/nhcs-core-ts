@@ -11,6 +11,7 @@ src/
   shared/                 # cross-module reusable code
     components/
       ui/                 # shadcn primitives
+    platform/             # cross-cutting infrastructure seams
     lib/                  # app/library setup + adapters
     utils/                # pure helper functions
   integrations/           # external integration setup
@@ -162,6 +163,69 @@ PageHeader -> shared/components
 EmployeePicker -> shared/employee
 PcnForm -> modules/pcn/shared
 PcnListTable -> modules/pcn/list
+```
+
+## Shared Boundary With Contract
+
+Use this shape when a shared platform module has a small caller interface but noisy implementation mechanics:
+
+```txt
+shared/platform/backend-boundary/
+  api.contract.ts       # interface + behavior docs; read first
+  api.server.ts         # tiny exported adapter
+  api.types.ts
+  api.errors.ts
+  implementation/
+    public-json.server.ts
+    backend-envelope.ts
+    backend-url.ts
+    json-headers.ts
+```
+
+```txt
+shared/platform/app-session/
+  app-session.contract.ts
+  app-session.server.ts
+  app-session.types.ts
+  implementation/
+    read-app-session.server.ts
+    signed-app-session-cookie.server.ts
+    app-session-schema.ts
+    cookie-header.ts
+```
+
+Main file stays boring:
+
+```ts
+import type { BackendBoundary } from "./api.contract";
+import { publicJsonGet, publicJsonPost } from "./implementation/public-json.server";
+
+export const api: BackendBoundary = {
+  public: {
+    get: publicJsonGet,
+    post: publicJsonPost,
+  },
+};
+```
+
+Contract file carries review docs:
+
+```ts
+export type BackendBoundary = {
+  readonly public: {
+    /** Calls public backend GET, unwraps Backend Envelope, throws typed API errors. */
+    get<TPayload = unknown>(path: string): Promise<TPayload>;
+  };
+};
+```
+
+Avoid:
+
+```txt
+shared/platform/backend-boundary/api.utils.ts
+shared/platform/backend-boundary/utils.ts
+shared/platform/backend-boundary/helpers.ts
+shared/platform/backend-boundary/implementation/index.ts
 ```
 
 ## Lib vs Utils
