@@ -1,23 +1,32 @@
-import { getCookie } from "@tanstack/react-start/server";
+import { getRequestHeader } from "@tanstack/react-start/server";
 import {
 	APP_SESSION_COOKIE_NAME,
 	type GetAppSessionOptions,
 } from "../app-session.contract";
 import type { AppSession } from "../app-session.types";
 import { getCookieValue } from "./cookie-header";
+import { readLegacyCookiesAppSession } from "./legacy-cookies.server";
 import { readSignedAppSessionCookieValue } from "./signed-app-session-cookie.server";
 
 /** Reads normalized App Session from current request cookies or supplied Cookie header. */
 export function readAppSession(
 	options: GetAppSessionOptions = {},
 ): AppSession | null {
-	const cookieValue = Object.hasOwn(options, "cookieHeader")
-		? getCookieValue(options.cookieHeader, APP_SESSION_COOKIE_NAME)
-		: getCookie(APP_SESSION_COOKIE_NAME);
+	const cookieHeader = Object.hasOwn(options, "cookieHeader")
+		? options.cookieHeader
+		: getRequestHeader("cookie");
+	const appSessionCookieValue = getCookieValue(
+		cookieHeader,
+		APP_SESSION_COOKIE_NAME,
+	);
 
-	if (!cookieValue) {
-		return null;
+	if (appSessionCookieValue) {
+		const appSession = readSignedAppSessionCookieValue(appSessionCookieValue);
+
+		if (appSession) {
+			return appSession;
+		}
 	}
 
-	return readSignedAppSessionCookieValue(cookieValue);
+	return readLegacyCookiesAppSession(cookieHeader);
 }

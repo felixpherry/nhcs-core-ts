@@ -100,6 +100,8 @@ This gives feature migration a stable interface: modules call typed server funct
 
 - ADR-0001 records the decision to use server functions for the Backend Boundary.
 - ADR-0002 records the decision to normalize Legacy Cookies into an App Session while preserving cross-app login compatibility.
+- Phase 4 confirmed the Legacy Cookies compatibility details in `.scratch/backend-boundary-app-session/legacy-cookies-compatibility.md`.
+- Phase 5 added Legacy Cookies fallback inside the App Session boundary.
 - Shared Platform glossary terms are documented in the context map and shared context documentation.
 - The old apps show that the backend uses `result` for most payloads, `result.data` for list wrappers, and top-level `data` for transformed authentication responses.
 - The backend status contract is intentionally handled as a compatibility layer because HTTP status alone is not a reliable success signal.

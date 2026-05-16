@@ -7,10 +7,13 @@ export type GetAppSessionOptions = {
 };
 
 /**
- * Reads normalized App Session from app-owned signed session cookie.
+ * Reads normalized App Session from app-owned signed session cookie or Legacy Cookies.
  *
  * Contract:
- * - returns null when session cookie is missing, invalid, or tampered
+ * - prefers valid app-owned nhcs_session cookie over Legacy Cookies
+ * - falls back to valid Legacy Cookies when nhcs_session is missing or unusable
+ * - returns null when no valid App Session can be read
+ * - exposes normalized menuGroups for navlink rendering
  * - reads current request cookies by default
  * - accepts explicit Cookie header for tests/server adapters
  */

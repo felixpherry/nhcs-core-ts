@@ -4,6 +4,7 @@ import type { AppSession } from "../app-session.types";
 const appSessionSchema = z.object({
 	accessId: nonEmptyString(),
 	accessToken: nonEmptyString(),
+	menuGroups: z.array(z.enum(["ESS", "MSS", "CORE"])),
 	userId: nonEmptyString(),
 	userLevel: nonEmptyString(),
 });
