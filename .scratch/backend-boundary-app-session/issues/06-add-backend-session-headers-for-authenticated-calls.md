@@ -8,13 +8,13 @@ Status: needs-triage
 
 ## What to build
 
-Add authenticated Backend Boundary calls through `api.auth`. Protected backend calls should read the App Session, fail locally when no valid session exists, and include Backend Session Headers derived centrally from the App Session.
+Add authenticated Backend Boundary calls through `api.private`. Protected backend calls should read the App Session, fail locally when no valid session exists, and include Backend Session Headers derived centrally from the App Session.
 
 ## Acceptance criteria
 
-- [ ] `api.auth` reads the App Session and throws a session-expired error before contacting the backend when no valid session exists.
-- [ ] Authenticated calls include `Authorization`, `user-id`, and `user-login-id` derived from the App Session.
-- [ ] Unit tests cover missing-session behavior and Backend Session Header derivation.
+- [x] `api.private` reads the App Session and throws a session-expired error before contacting the backend when no valid session exists.
+- [x] Authenticated calls include `Authorization`, `user-id`, and `user-login-id` derived from the App Session.
+- [x] Unit tests cover missing-session behavior and Backend Session Header derivation.
 
 ## Blocked by
 

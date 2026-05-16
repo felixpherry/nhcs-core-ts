@@ -1,5 +1,9 @@
 import type { BackendBoundary } from "./api.contract";
 import {
+	privateJsonGet,
+	privateJsonPost,
+} from "./implementation/private-json.server";
+import {
 	publicJsonGet,
 	publicJsonPost,
 } from "./implementation/public-json.server";
@@ -17,12 +21,18 @@ export type {
 	ApiErrorDiagnostics,
 	BackendEnvelope,
 	JsonValue,
+	PrivateJsonOptions,
+	PrivateJsonPostOptions,
 	PublicJsonOptions,
 	PublicJsonPostOptions,
 	PublicJsonQuery,
 } from "./api.types";
 
 export const api: BackendBoundary = {
+	private: {
+		get: privateJsonGet,
+		post: privateJsonPost,
+	},
 	public: {
 		get: publicJsonGet,
 		post: publicJsonPost,

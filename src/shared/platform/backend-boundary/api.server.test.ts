@@ -1,5 +1,29 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+const { requestCookieHeader } = vi.hoisted(() => ({
+	requestCookieHeader: { value: undefined as string | null | undefined },
+}));
+
+vi.mock("#/env", () => ({
+	env: {
+		API_BASE_URL: "http://backend.example/nhcs",
+		COOKIE_NAME_SUFFIX: "_TEST",
+		COOKIE_SECRET: "test-legacy-cookie-secret",
+		NHCS_SESSION_SECRET: "test-session-secret-at-least-32-characters",
+	},
+}));
+
+vi.mock("@tanstack/react-start/server", () => ({
+	getRequestHeader: (name: string) =>
+		name.toLowerCase() === "cookie" ? requestCookieHeader.value : undefined,
+}));
+
 import { env } from "#/env";
+import {
+	APP_SESSION_COOKIE_NAME,
+	type AppSession,
+	createAppSessionCookieValue,
+} from "../app-session/app-session.server";
 import {
 	ApiBusinessError,
 	ApiForbiddenError,
@@ -257,6 +281,45 @@ describe("api.public", () => {
 	});
 });
 
+describe("api.private", () => {
+	afterEach(() => {
+		requestCookieHeader.value = undefined;
+		vi.unstubAllGlobals();
+		vi.restoreAllMocks();
+	});
+
+	it("throws session-expired before contacting backend when no App Session exists", async () => {
+		const fetchMock = vi.fn();
+		requestCookieHeader.value = null;
+		vi.stubGlobal("fetch", fetchMock);
+
+		const error = await catchApiError(() => api.private.get("/profile"));
+
+		expect(error).toBeInstanceOf(ApiSessionExpiredError);
+		expect((error as ApiSessionExpiredError).kind).toBe("session-expired");
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("includes Backend Session Headers derived from App Session", async () => {
+		const appSession = {
+			accessId: "ACCESS-1",
+			accessToken: "token-1",
+			menuGroups: ["CORE"],
+			userId: "USER-1",
+			userLevel: "LEVEL-1",
+		} satisfies AppSession;
+		const fetchMock = mockJsonFetch({ result: { ok: true } });
+		requestCookieHeader.value = `${APP_SESSION_COOKIE_NAME}=${createAppSessionCookieValue(appSession)}`;
+
+		await api.private.post("/employees", { body: { employeeId: "E-1" } });
+
+		const headers = getCalledFetchHeaders(fetchMock);
+		expect(headers.get("authorization")).toBe("Bearer token-1");
+		expect(headers.get("user-id")).toBe("USER-1_ACCESS-1_LEVEL-1");
+		expect(headers.get("user-login-id")).toBe("USER-1");
+	});
+});
+
 describe("buildBackendUrl", () => {
 	it("builds URLs from relative paths without exposing base URL ownership", () => {
 		expect(buildBackendUrl(env.API_BASE_URL, "login")).toBe(
@@ -306,6 +369,18 @@ function getCalledFetchUrl(fetchMock: ReturnType<typeof mockJsonFetch>) {
 	}
 
 	return new URL(fetchUrl);
+}
+
+/** Reads first Headers object passed to mocked fetch call. */
+function getCalledFetchHeaders(fetchMock: ReturnType<typeof mockJsonFetch>) {
+	const fetchInit = fetchMock.mock.calls[0]?.[1];
+	const headers = fetchInit?.headers;
+
+	if (!(headers instanceof Headers)) {
+		throw new Error("Expected fetch to be called with Headers.");
+	}
+
+	return headers;
 }
 
 /** Ensures URL string ends with slash for stable URL resolution in tests. */

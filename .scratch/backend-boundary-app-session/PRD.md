@@ -29,7 +29,7 @@ This gives feature migration a stable interface: modules call typed server funct
 13. As a feature developer, I want raw Backend Envelope values preserved in diagnostics, so that backend issues can still be debugged.
 14. As a feature developer, I want the low-level API client to accept only relative backend paths, so that backend base URL ownership stays centralized.
 15. As a feature developer, I want `api.public` for unauthenticated calls, so that login can call the backend without requiring a session.
-16. As a feature developer, I want `api.auth` for authenticated calls, so that protected backend calls automatically use the App Session.
+16. As a feature developer, I want `api.private` for authenticated calls, so that protected backend calls automatically use the App Session.
 17. As a feature developer, I want authenticated calls with no valid App Session to fail before contacting the backend, so that missing session behavior is predictable.
 18. As a feature developer, I want Backend Session Headers derived centrally, so that modules do not construct backend-specific auth headers.
 19. As a feature developer, I want authenticated backend calls to include `Authorization`, `user-id`, and `user-login-id`, so that legacy NHCS backend expectations are met.
@@ -102,6 +102,7 @@ This gives feature migration a stable interface: modules call typed server funct
 - ADR-0002 records the decision to normalize Legacy Cookies into an App Session while preserving cross-app login compatibility.
 - Phase 4 confirmed the Legacy Cookies compatibility details in `.scratch/backend-boundary-app-session/legacy-cookies-compatibility.md`.
 - Phase 5 added Legacy Cookies fallback inside the App Session boundary.
+- Phase 6 added `api.private` with local missing-session failure and centralized Backend Session Header derivation.
 - Shared Platform glossary terms are documented in the context map and shared context documentation.
 - The old apps show that the backend uses `result` for most payloads, `result.data` for list wrappers, and top-level `data` for transformed authentication responses.
 - The backend status contract is intentionally handled as a compatibility layer because HTTP status alone is not a reliable success signal.

@@ -18,6 +18,10 @@ export type PublicJsonPostOptions = PublicJsonOptions & {
 	body?: JsonValue;
 };
 
+export type PrivateJsonOptions = PublicJsonOptions;
+
+export type PrivateJsonPostOptions = PublicJsonPostOptions;
+
 export type BackendEnvelope<TPayload = unknown> = {
 	statusCode?: number;
 	isSuccess?: boolean;
