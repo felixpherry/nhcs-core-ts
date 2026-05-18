@@ -69,7 +69,20 @@ export class ApiServerDownError<TPayload = unknown> extends Error {
 	}
 }
 
-/** Represents missing, expired, or rejected backend session. */
+/** Represents absent or unreadable App Session before backend contact. */
+export class ApiMissingAppSessionError<TPayload = unknown> extends Error {
+	readonly kind = "missing-app-session";
+	readonly diagnostics: ApiErrorDiagnostics<TPayload>;
+
+	/** Creates missing App Session API error with local diagnostics. */
+	constructor(message: string, diagnostics: ApiErrorDiagnostics<TPayload>) {
+		super(message);
+		this.name = "ApiMissingAppSessionError";
+		this.diagnostics = diagnostics;
+	}
+}
+
+/** Represents backend-rejected session expiry. */
 export class ApiSessionExpiredError<TPayload = unknown> extends Error {
 	readonly kind = "session-expired";
 	readonly diagnostics: ApiErrorDiagnostics<TPayload>;

@@ -1,5 +1,5 @@
 import { getAppSession } from "../../app-session/app-session.server";
-import { ApiSessionExpiredError } from "../api.errors";
+import { ApiMissingAppSessionError } from "../api.errors";
 import type { PrivateJsonOptions, PrivateJsonPostOptions } from "../api.types";
 import { sendBackendJson } from "./backend-json.server";
 import { buildBackendSessionHeaders } from "./backend-session-headers";
@@ -12,7 +12,10 @@ export async function privateJsonGet<TPayload = unknown>(
 	const appSession = getAppSession();
 
 	if (!appSession) {
-		throw new ApiSessionExpiredError("App Session is missing or expired.", {});
+		throw new ApiMissingAppSessionError(
+			"App Session is missing or unreadable.",
+			{},
+		);
 	}
 
 	return sendBackendJson<TPayload>({
@@ -33,7 +36,10 @@ export async function privateJsonPost<TPayload = unknown>(
 	const appSession = getAppSession();
 
 	if (!appSession) {
-		throw new ApiSessionExpiredError("App Session is missing or expired.", {});
+		throw new ApiMissingAppSessionError(
+			"App Session is missing or unreadable.",
+			{},
+		);
 	}
 
 	return sendBackendJson<TPayload>({

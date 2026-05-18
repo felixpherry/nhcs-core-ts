@@ -27,6 +27,7 @@ import {
 import {
 	ApiBusinessError,
 	ApiForbiddenError,
+	ApiMissingAppSessionError,
 	ApiServerDownError,
 	ApiSessionExpiredError,
 	ApiUnknownError,
@@ -288,15 +289,17 @@ describe("api.private", () => {
 		vi.restoreAllMocks();
 	});
 
-	it("throws session-expired before contacting backend when no App Session exists", async () => {
+	it("throws missing-app-session before contacting backend when no App Session exists", async () => {
 		const fetchMock = vi.fn();
 		requestCookieHeader.value = null;
 		vi.stubGlobal("fetch", fetchMock);
 
 		const error = await catchApiError(() => api.private.get("/profile"));
 
-		expect(error).toBeInstanceOf(ApiSessionExpiredError);
-		expect((error as ApiSessionExpiredError).kind).toBe("session-expired");
+		expect(error).toBeInstanceOf(ApiMissingAppSessionError);
+		expect((error as ApiMissingAppSessionError).kind).toBe(
+			"missing-app-session",
+		);
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 

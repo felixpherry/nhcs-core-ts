@@ -12,6 +12,7 @@ export type { BackendBoundary } from "./api.contract";
 export {
 	ApiBusinessError,
 	ApiForbiddenError,
+	ApiMissingAppSessionError,
 	ApiServerDownError,
 	ApiSessionExpiredError,
 	ApiUnknownError,

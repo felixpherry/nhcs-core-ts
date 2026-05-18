@@ -24,11 +24,16 @@ _Avoid_: New session, browser storage
 The compatibility headers sent to the NHCS backend for authenticated requests.
 _Avoid_: Auth headers, token headers
 
+**Session Expiry Acknowledgement**:
+The user-visible acknowledgement step required after an in-page session expiry before redirecting to authentication.
+_Avoid_: Immediate kick-out, silent redirect
+
 ## Relationships
 
 - A **Backend Boundary** normalizes a **Backend Envelope** before module code receives data.
 - An **App Session** may be created from **Legacy Cookies**.
 - **Backend Session Headers** are derived from an **App Session**.
+- **Session Expiry Acknowledgement** happens when the backend rejects an existing **App Session**; missing cookies redirect to authentication immediately because no session can be judged.
 - Modules depend on the **Backend Boundary**, not direct backend endpoints.
 
 ## Example dialogue
@@ -39,3 +44,4 @@ _Avoid_: Auth headers, token headers
 ## Flagged ambiguities
 
 - "Session" can mean raw legacy cookie values or normalized app state — resolved: use **Legacy Cookies** for raw shared cookies and **App Session** for normalized app state.
+- "Session expired" can mean backend-rejected existing cookies or missing cookies — resolved: missing cookies redirect immediately; existing cookies are judged only by the first backend call, which may trigger **Session Expiry Acknowledgement**.

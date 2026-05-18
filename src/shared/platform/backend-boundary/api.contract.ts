@@ -13,7 +13,7 @@ export type BackendBoundary = {
 		 * Contract:
 		 * - accepts relative backend paths only
 		 * - reads App Session from current request
-		 * - throws session-expired API error before backend contact when session is missing
+		 * - throws missing-app-session API error before backend contact when session is missing
 		 * - includes Backend Session Headers derived from App Session
 		 * - unwraps Backend Envelope result/data
 		 * - throws typed API errors for backend/session/transport failures
@@ -29,7 +29,7 @@ export type BackendBoundary = {
 		 * Contract:
 		 * - accepts relative backend paths only
 		 * - reads App Session from current request
-		 * - throws session-expired API error before backend contact when session is missing
+		 * - throws missing-app-session API error before backend contact when session is missing
 		 * - includes Backend Session Headers derived from App Session
 		 * - unwraps Backend Envelope result/data
 		 * - throws typed API errors for backend/session/transport failures
