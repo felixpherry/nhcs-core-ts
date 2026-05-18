@@ -19,11 +19,10 @@ vi.mock("@tanstack/react-start/server", () => ({
 }));
 
 import { env } from "#/env";
-import {
-	APP_SESSION_COOKIE_NAME,
-	type AppSession,
-	createAppSessionCookieValue,
-} from "../app-session/app-session.server";
+import { AppSession } from "../app-session/app-session";
+import { APP_SESSION_COOKIE_NAME } from "../app-session/app-session.protocol";
+import type { AppSession as AppSessionData } from "../app-session/app-session.types";
+import { BackendBoundary } from "./backend-boundary";
 import {
 	ApiBusinessError,
 	ApiForbiddenError,
@@ -32,11 +31,12 @@ import {
 	ApiSessionExpiredError,
 	ApiUnknownError,
 	ApiValidationError,
-} from "./api.errors";
-import { api } from "./api.server";
-import { buildBackendUrl } from "./implementation/backend-url";
+} from "./backend-boundary.protocol";
 
-describe("api.public", () => {
+const backendBoundary = new BackendBoundary();
+const appSessionPlatform = new AppSession();
+
+describe("BackendBoundary public calls", () => {
 	afterEach(() => {
 		vi.unstubAllGlobals();
 		vi.restoreAllMocks();
@@ -44,12 +44,12 @@ describe("api.public", () => {
 
 	it("accepts only relative backend paths", async () => {
 		await expect(
-			api.public.get("https://backend.example/login"),
+			backendBoundary.public.get("https://backend.example/login"),
 		).rejects.toThrow("Backend path must be relative, not absolute.");
-		await expect(api.public.post("//backend.example/login")).rejects.toThrow(
-			"Backend path must be relative, not protocol-relative.",
-		);
-		await expect(api.public.get("../login")).rejects.toThrow(
+		await expect(
+			backendBoundary.public.post("//backend.example/login"),
+		).rejects.toThrow("Backend path must be relative, not protocol-relative.");
+		await expect(backendBoundary.public.get("../login")).rejects.toThrow(
 			"Backend path must not contain parent directory segments.",
 		);
 	});
@@ -57,7 +57,7 @@ describe("api.public", () => {
 	it("uses API_BASE_URL centrally", async () => {
 		const fetchMock = mockJsonFetch({ result: { ok: true } });
 
-		await api.public.get("/login");
+		await backendBoundary.public.get("/login");
 
 		expect(fetchMock).toHaveBeenCalledWith(
 			new URL("login", ensureTrailingSlash(env.API_BASE_URL)).toString(),
@@ -68,7 +68,7 @@ describe("api.public", () => {
 	it("supports public GET calls", async () => {
 		const fetchMock = mockJsonFetch({ result: { ok: true } });
 
-		await api.public.get("/login");
+		await backendBoundary.public.get("/login");
 
 		expect(fetchMock).toHaveBeenCalledWith(
 			expect.any(String),
@@ -79,7 +79,7 @@ describe("api.public", () => {
 	it("supports public POST calls with JSON body in options", async () => {
 		const fetchMock = mockJsonFetch({ result: { ok: true } });
 
-		await api.public.post("/login", {
+		await backendBoundary.public.post("/login", {
 			body: { password: "secret", username: "nhcs" },
 		});
 
@@ -95,7 +95,7 @@ describe("api.public", () => {
 	it("merges query params with backend path query", async () => {
 		const fetchMock = mockJsonFetch({ result: { ok: true } });
 
-		await api.public.get("/login?keep=yes&tenant=old", {
+		await backendBoundary.public.get("/login?keep=yes&tenant=old", {
 			query: { page: 2, tenant: "new" },
 		});
 
@@ -108,19 +108,23 @@ describe("api.public", () => {
 	it("returns result payload from Backend Envelope", async () => {
 		mockJsonFetch({ result: { token: "abc" } });
 
-		await expect(api.public.get("/login")).resolves.toEqual({ token: "abc" });
+		await expect(backendBoundary.public.get("/login")).resolves.toEqual({
+			token: "abc",
+		});
 	});
 
 	it("returns data payload from Backend Envelope", async () => {
 		mockJsonFetch({ data: { token: "abc" } });
 
-		await expect(api.public.get("/login")).resolves.toEqual({ token: "abc" });
+		await expect(backendBoundary.public.get("/login")).resolves.toEqual({
+			token: "abc",
+		});
 	});
 
 	it("prefers result over data when both exist", async () => {
 		mockJsonFetch({ data: { source: "data" }, result: { source: "result" } });
 
-		await expect(api.public.get("/login")).resolves.toEqual({
+		await expect(backendBoundary.public.get("/login")).resolves.toEqual({
 			source: "result",
 		});
 	});
@@ -134,7 +138,9 @@ describe("api.public", () => {
 		};
 		mockJsonFetch(envelope);
 
-		const error = await catchApiError(() => api.public.get("/profile"));
+		const error = await catchApiError(() =>
+			backendBoundary.public.get("/profile"),
+		);
 
 		expect(error).toBeInstanceOf(ApiSessionExpiredError);
 		const apiError = error as ApiSessionExpiredError;
@@ -153,7 +159,9 @@ describe("api.public", () => {
 		};
 		mockJsonFetch(envelope);
 
-		const error = await catchApiError(() => api.public.post("/employees"));
+		const error = await catchApiError(() =>
+			backendBoundary.public.post("/employees"),
+		);
 
 		expect(error).toBeInstanceOf(ApiBusinessError);
 		const apiError = error as ApiBusinessError;
@@ -170,7 +178,9 @@ describe("api.public", () => {
 		};
 		mockJsonFetch(envelope);
 
-		const error = await catchApiError(() => api.public.post("/employees"));
+		const error = await catchApiError(() =>
+			backendBoundary.public.post("/employees"),
+		);
 
 		expect(error).toBeInstanceOf(ApiBusinessError);
 		expect((error as ApiBusinessError).message).toBe(
@@ -187,7 +197,9 @@ describe("api.public", () => {
 		};
 		mockJsonFetch(envelope, { status: 400 });
 
-		const error = await catchApiError(() => api.public.get("/employees"));
+		const error = await catchApiError(() =>
+			backendBoundary.public.get("/employees"),
+		);
 
 		expect(error).toBeInstanceOf(ApiValidationError);
 		const apiError = error as ApiValidationError;
@@ -205,7 +217,9 @@ describe("api.public", () => {
 		};
 		mockJsonFetch(envelope, { status: 403 });
 
-		const error = await catchApiError(() => api.public.get("/employees"));
+		const error = await catchApiError(() =>
+			backendBoundary.public.get("/employees"),
+		);
 
 		expect(error).toBeInstanceOf(ApiForbiddenError);
 		const apiError = error as ApiForbiddenError;
@@ -223,7 +237,9 @@ describe("api.public", () => {
 		};
 		mockJsonFetch(envelope, { status: 500 });
 
-		const error = await catchApiError(() => api.public.get("/employees"));
+		const error = await catchApiError(() =>
+			backendBoundary.public.get("/employees"),
+		);
 
 		expect(error).toBeInstanceOf(ApiServerDownError);
 		const apiError = error as ApiServerDownError;
@@ -240,7 +256,9 @@ describe("api.public", () => {
 		};
 		mockJsonFetch(envelope, { status: 503 });
 
-		const error = await catchApiError(() => api.public.get("/employees"));
+		const error = await catchApiError(() =>
+			backendBoundary.public.get("/employees"),
+		);
 
 		expect(error).toBeInstanceOf(ApiServerDownError);
 		const apiError = error as ApiServerDownError;
@@ -253,7 +271,9 @@ describe("api.public", () => {
 		const networkError = new TypeError("fetch failed");
 		vi.stubGlobal("fetch", vi.fn().mockRejectedValue(networkError));
 
-		const error = await catchApiError(() => api.public.get("/employees"));
+		const error = await catchApiError(() =>
+			backendBoundary.public.get("/employees"),
+		);
 
 		expect(error).toBeInstanceOf(ApiServerDownError);
 		const apiError = error as ApiServerDownError;
@@ -272,7 +292,9 @@ describe("api.public", () => {
 		};
 		mockJsonFetch(envelope, { status: 418 });
 
-		const error = await catchApiError(() => api.public.get("/employees"));
+		const error = await catchApiError(() =>
+			backendBoundary.public.get("/employees"),
+		);
 
 		expect(error).toBeInstanceOf(ApiUnknownError);
 		const apiError = error as ApiUnknownError;
@@ -282,7 +304,7 @@ describe("api.public", () => {
 	});
 });
 
-describe("api.private", () => {
+describe("BackendBoundary private calls", () => {
 	afterEach(() => {
 		requestCookieHeader.value = undefined;
 		vi.unstubAllGlobals();
@@ -294,7 +316,9 @@ describe("api.private", () => {
 		requestCookieHeader.value = null;
 		vi.stubGlobal("fetch", fetchMock);
 
-		const error = await catchApiError(() => api.private.get("/profile"));
+		const error = await catchApiError(() =>
+			backendBoundary.private.get("/profile"),
+		);
 
 		expect(error).toBeInstanceOf(ApiMissingAppSessionError);
 		expect((error as ApiMissingAppSessionError).kind).toBe(
@@ -310,36 +334,18 @@ describe("api.private", () => {
 			menuGroups: ["CORE"],
 			userId: "USER-1",
 			userLevel: "LEVEL-1",
-		} satisfies AppSession;
+		} satisfies AppSessionData;
 		const fetchMock = mockJsonFetch({ result: { ok: true } });
-		requestCookieHeader.value = `${APP_SESSION_COOKIE_NAME}=${createAppSessionCookieValue(appSession)}`;
+		requestCookieHeader.value = `${APP_SESSION_COOKIE_NAME}=${appSessionPlatform.createCookieValue(appSession)}`;
 
-		await api.private.post("/employees", { body: { employeeId: "E-1" } });
+		await backendBoundary.private.post("/employees", {
+			body: { employeeId: "E-1" },
+		});
 
 		const headers = getCalledFetchHeaders(fetchMock);
 		expect(headers.get("authorization")).toBe("Bearer token-1");
 		expect(headers.get("user-id")).toBe("USER-1_ACCESS-1_LEVEL-1");
 		expect(headers.get("user-login-id")).toBe("USER-1");
-	});
-});
-
-describe("buildBackendUrl", () => {
-	it("builds URLs from relative paths without exposing base URL ownership", () => {
-		expect(buildBackendUrl(env.API_BASE_URL, "login")).toBe(
-			new URL("login", ensureTrailingSlash(env.API_BASE_URL)).toString(),
-		);
-	});
-
-	it("merges query params into backend URLs", () => {
-		const backendUrl = new URL(
-			buildBackendUrl(env.API_BASE_URL, "login?tenant=old", {
-				page: 2,
-				tenant: "new",
-			}),
-		);
-
-		expect(backendUrl.searchParams.get("page")).toBe("2");
-		expect(backendUrl.searchParams.get("tenant")).toBe("new");
 	});
 });
 

@@ -3,18 +3,11 @@ import { env } from "#/env";
 import type { AppSession, AppSessionMenuGroup } from "../app-session.types";
 import { safeParseAppSession } from "./app-session-schema";
 import { getCookieValue } from "./cookie-header";
-
-const legacyCookieBaseNames = {
-	accessId: "Xyc02D92LQ",
-	accessToken: "ZTn5qC8jA0",
-	fgCore: "P0bMlqK31",
-	fgEss: "JzXkT8cV2",
-	fgMss: "mKcLw923X",
-	userId: "dXc83nF0p",
-	userLevel: "Qm8LxK01w",
-} as const;
-
-type LegacyCookieField = keyof typeof legacyCookieBaseNames;
+import {
+	getLegacyCookieName,
+	type LegacyCookieField,
+	legacyCookieBaseNames,
+} from "./legacy-cookie-names.server";
 
 type LegacyCookieValues = Record<LegacyCookieField, string | null>;
 
@@ -83,7 +76,7 @@ function readLegacyCookieValue(
 	field: LegacyCookieField,
 	config: LegacyCookieConfig,
 ): string | null {
-	const cookieName = `${legacyCookieBaseNames[field]}${config.cookieNameSuffix}`;
+	const cookieName = getLegacyCookieName(field, config.cookieNameSuffix);
 	const signedValue = getCookieValue(cookieHeader, cookieName);
 
 	if (!signedValue) {

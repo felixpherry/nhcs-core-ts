@@ -3,9 +3,9 @@ import type {
 	PrivateJsonPostOptions,
 	PublicJsonOptions,
 	PublicJsonPostOptions,
-} from "./api.types";
+} from "./backend-boundary.types";
 
-export type BackendBoundary = {
+export interface BackendBoundaryContract {
 	readonly private: {
 		/**
 		 * Calls protected NHCS backend GET endpoint.
@@ -69,4 +69,4 @@ export type BackendBoundary = {
 			options?: PublicJsonPostOptions,
 		): Promise<TPayload>;
 	};
-};
+}

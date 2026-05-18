@@ -1,6 +1,9 @@
 import { env } from "#/env";
-import { ApiServerDownError } from "../api.errors";
-import type { JsonHttpMethod, PublicJsonPostOptions } from "../api.types";
+import { ApiServerDownError } from "../backend-boundary.protocol";
+import type {
+	JsonHttpMethod,
+	PublicJsonPostOptions,
+} from "../backend-boundary.types";
 import {
 	extractBackendPayload,
 	readBackendEnvelope,

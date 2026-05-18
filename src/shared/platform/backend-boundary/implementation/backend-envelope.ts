@@ -5,8 +5,8 @@ import {
 	ApiSessionExpiredError,
 	ApiUnknownError,
 	ApiValidationError,
-} from "../api.errors";
-import type { BackendEnvelope } from "../api.types";
+} from "../backend-boundary.protocol";
+import type { BackendEnvelope } from "../backend-boundary.types";
 
 /** Reads backend response body as NHCS Backend Envelope. */
 export async function readBackendEnvelope<TPayload = unknown>(

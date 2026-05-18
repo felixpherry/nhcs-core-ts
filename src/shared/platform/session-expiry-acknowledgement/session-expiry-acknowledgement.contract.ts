@@ -1,8 +1,7 @@
-export type SessionExpiryAcknowledgementListener = (pending: boolean) => void;
-
-export type ClearExpiredSessionCookiesResult = {
-	readonly clearedCookieNames: readonly string[];
-};
+import type {
+	ClearExpiredSessionCookiesResult,
+	SessionExpiryAcknowledgementListener,
+} from "./session-expiry-acknowledgement.types";
 
 /**
  * Shared Platform contract for Session Expiry Acknowledgement.
@@ -20,7 +19,7 @@ export type ClearExpiredSessionCookiesResult = {
  * - clears app-owned session cookie plus all known Legacy Cookies
  * - expires host-only and configured domain-scoped cookie variants
  */
-export type SessionExpiryAcknowledgementContract = {
+export interface SessionExpiryAcknowledgementContract {
 	readonly isExpiryError: (error: unknown) => boolean;
 	readonly isPending: () => boolean;
 	readonly setPending: () => boolean;
@@ -28,4 +27,5 @@ export type SessionExpiryAcknowledgementContract = {
 	readonly subscribe: (
 		listener: SessionExpiryAcknowledgementListener,
 	) => () => void;
-};
+	readonly acknowledge: () => Promise<ClearExpiredSessionCookiesResult>;
+}

@@ -67,14 +67,15 @@ Some shared platform modules are cross-module seams with a small caller interfac
 
 ```txt
 shared/platform/{concept}/
+  {concept}.ts
   {concept}.contract.ts
-  {concept}.server.ts
   {concept}.types.ts
-  {concept}.errors.ts
+  {concept}.protocol.ts
+  {concept}.test.ts
   implementation/
 ```
 
-`*.contract.ts` documents the caller interface, invariants, and error modes. `*.server.ts` stays as the tiny exported adapter. `implementation/` holds module-local mechanics that reviewers can skip unless debugging.
+`*.contract.ts` documents the caller interface, invariants, and error modes. `{concept}.ts` exports the one main class adapter and stays tiny. When implementation mechanics fan out, the main class should import one named implementation root instead of many helpers. `*.protocol.ts` holds caller-visible runtime protocol items such as error classes or sentinel keys. `implementation/` holds module-local mechanics that reviewers can skip unless debugging.
 
 Reason: reviewers should be able to inspect the interface without reading cookie parsing, envelope mapping, URL safety, or similar mechanical code.
 
@@ -133,7 +134,7 @@ Used by multiple top-level modules as infrastructure seam?
 -> shared/platform/{concept}/
 
 Shared platform seam with noisy mechanics?
--> shared/platform/{concept}/{concept}.contract.ts + {concept}.server.ts + implementation/
+-> shared/platform/{concept}/{concept}.ts + {concept}.contract.ts + {concept}.protocol.ts + implementation/
 
 Generic UI primitive?
 -> shared/components/ui/

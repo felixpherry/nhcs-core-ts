@@ -173,12 +173,13 @@ Use this shape when a shared platform module has a small caller interface but no
 
 ```txt
 shared/platform/backend-boundary/
-  api.contract.ts       # interface + behavior docs; read first
-  api.server.ts         # tiny exported adapter
-  api.types.ts
-  api.errors.ts
+  backend-boundary.ts          # exports BackendBoundary class only
+  backend-boundary.contract.ts # interface + behavior docs; read first
+  backend-boundary.types.ts
+  backend-boundary.protocol.ts # caller-visible runtime protocol: errors, sentinels, keys
+  backend-boundary.test.ts
   implementation/
-    public-json.server.ts
+    backend-boundary-implementation.server.ts # one implementation root imported by main class
     backend-envelope.ts
     backend-url.ts
     json-headers.ts
@@ -186,39 +187,42 @@ shared/platform/backend-boundary/
 
 ```txt
 shared/platform/app-session/
+  app-session.ts          # exports AppSession class only
   app-session.contract.ts
-  app-session.server.ts
   app-session.types.ts
+  app-session.protocol.ts
+  app-session.test.ts
   implementation/
+    app-session-implementation.server.ts # one implementation root imported by main class
     read-app-session.server.ts
     signed-app-session-cookie.server.ts
     app-session-schema.ts
     cookie-header.ts
 ```
 
-Main file stays boring:
+Main file stays boring and imports one implementation root:
 
 ```ts
-import type { BackendBoundary } from "./api.contract";
-import { publicJsonGet, publicJsonPost } from "./implementation/public-json.server";
+import type { BackendBoundaryContract } from "./backend-boundary.contract";
+import { createBackendBoundaryImplementation } from "./implementation/backend-boundary-implementation.server";
 
-export const api: BackendBoundary = {
-  public: {
-    get: publicJsonGet,
-    post: publicJsonPost,
-  },
-};
+export class BackendBoundary implements BackendBoundaryContract {
+  private readonly implementation = createBackendBoundaryImplementation();
+
+  readonly private = this.implementation.private;
+  readonly public = this.implementation.public;
+}
 ```
 
 Contract file carries review docs:
 
 ```ts
-export type BackendBoundary = {
+export interface BackendBoundaryContract {
   readonly public: {
     /** Calls public backend GET, unwraps Backend Envelope, throws typed API errors. */
     get<TPayload = unknown>(path: string): Promise<TPayload>;
   };
-};
+}
 ```
 
 Avoid:

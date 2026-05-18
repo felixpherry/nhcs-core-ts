@@ -98,22 +98,27 @@ Never mix client-safe query keys with server-only implementation.
 
 Do not put domain-specific code in `shared/components`.
 
-Shared platform modules with noisy mechanics may expose a contract-first shape:
+Shared platform modules with noisy mechanics expose a contract-first shape:
 
 ```txt
 shared/platform/{concept}/
+  {concept}.ts           # exports the one main class adapter
   {concept}.contract.ts  # review surface: interface, invariants, error modes
-  {concept}.server.ts    # tiny exported adapter / wiring
-  {concept}.types.ts
-  {concept}.errors.ts    # when caller-visible errors exist
+  {concept}.types.ts     # caller-visible types only
+  {concept}.protocol.ts  # caller-visible runtime protocol: errors, sentinels, keys
+  {concept}.test.ts      # usage and interface coverage for the main class
   implementation/        # module-local implementation mechanics
 ```
 
 Rules:
 
 - `*.contract.ts` is what reviewers read first.
-- `*.server.ts` should stay boring and small.
+- `{concept}.ts` exports only the main class adapter.
+- When implementation mechanics fan out, `{concept}.ts` should import one named implementation root instead of many helpers.
+- `*.types.ts` and `*.contract.ts` export types freely.
+- `*.protocol.ts` exports caller-visible runtime protocol items, such as error classes or sentinel keys.
 - `implementation/` inside `shared/platform/{concept}` is module-local, not generic `shared/utils`.
+- External callers must not import from `implementation/`.
 - Prefer named implementation files (`backend-url.ts`) over vague files (`utils.ts`, `helpers.ts`).
 - Do not force contracts for small modules that remain easy to scan.
 

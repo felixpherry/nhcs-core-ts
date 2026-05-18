@@ -1,5 +1,5 @@
 import queryString from "query-string";
-import type { PublicJsonQuery } from "../api.types";
+import type { PublicJsonQuery } from "../backend-boundary.types";
 
 /** Builds absolute backend URL from configured base URL, safe relative path, and query params. */
 export function buildBackendUrl(

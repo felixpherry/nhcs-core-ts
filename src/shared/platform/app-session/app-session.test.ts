@@ -1,25 +1,34 @@
 import { createHmac } from "node:crypto";
-import { describe, expect, it, vi } from "vitest";
-import type { AppSession } from "./app-session.server";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { AppSession as AppSessionData } from "./app-session.types";
 
-const { legacyCookieSecret, legacyCookieSuffix } = vi.hoisted(() => ({
-	legacyCookieSecret: "test-legacy-cookie-secret",
-	legacyCookieSuffix: "_TEST",
+const { envConfig } = vi.hoisted(() => ({
+	envConfig: {
+		legacyCookieSecret: "test-legacy-cookie-secret",
+		legacyCookieSuffix: "_TEST",
+	},
 }));
 
 vi.mock("#/env", () => ({
 	env: {
-		COOKIE_NAME_SUFFIX: legacyCookieSuffix,
-		COOKIE_SECRET: legacyCookieSecret,
+		get COOKIE_NAME_SUFFIX() {
+			return envConfig.legacyCookieSuffix;
+		},
+		get COOKIE_SECRET() {
+			return envConfig.legacyCookieSecret;
+		},
 		NHCS_SESSION_SECRET: "test-session-secret-at-least-32-characters",
 	},
 }));
 
-import {
-	APP_SESSION_COOKIE_NAME,
-	createAppSessionCookieValue,
-	getAppSession,
-} from "./app-session.server";
+import { AppSession } from "./app-session";
+import { APP_SESSION_COOKIE_NAME } from "./app-session.protocol";
+
+const appSessionPlatform = new AppSession();
+
+afterEach(() => {
+	envConfig.legacyCookieSuffix = "_TEST";
+});
 
 const legacyCookieBaseNames = {
 	accessId: "Xyc02D92LQ",
@@ -38,7 +47,7 @@ type LegacyCookieValues = Partial<Record<LegacyCookieField, string>>;
 function createLegacyCookieHeader(values: LegacyCookieValues): string {
 	return Object.entries(values)
 		.map(([field, value]) => {
-			const cookieName = `${legacyCookieBaseNames[field as LegacyCookieField]}${legacyCookieSuffix}`;
+			const cookieName = `${legacyCookieBaseNames[field as LegacyCookieField]}${envConfig.legacyCookieSuffix}`;
 
 			return `${cookieName}=${encodeURIComponent(signLegacyCookieValue(value))}`;
 		})
@@ -46,7 +55,7 @@ function createLegacyCookieHeader(values: LegacyCookieValues): string {
 }
 
 function createLegacyCookieHeaderForAppSession(
-	appSession: AppSession,
+	appSession: AppSessionData,
 	flags: Pick<LegacyCookieValues, "fgCore" | "fgEss" | "fgMss"> = {
 		fgCore: "F",
 		fgEss: "T",
@@ -64,7 +73,7 @@ function createLegacyCookieHeaderForAppSession(
 
 function signLegacyCookieValue(value: string): string {
 	const payload = Buffer.from(JSON.stringify(value), "utf8").toString("base64");
-	const signature = createHmac("sha256", legacyCookieSecret)
+	const signature = createHmac("sha256", envConfig.legacyCookieSecret)
 		.update(payload)
 		.digest("base64")
 		.replace(/=+$/, "");
@@ -80,31 +89,33 @@ describe("App Session internal cookie", () => {
 			menuGroups: ["ESS"],
 			userId: "USER-1",
 			userLevel: "LEVEL-1",
-		} satisfies AppSession;
-		const cookieValue = createAppSessionCookieValue(appSession);
+		} satisfies AppSessionData;
+		const cookieValue = appSessionPlatform.createCookieValue(appSession);
 
 		expect(
-			getAppSession({
+			appSessionPlatform.get({
 				cookieHeader: `${APP_SESSION_COOKIE_NAME}=${cookieValue}`,
 			}),
 		).toEqual(appSession);
 	});
 
 	it("returns null when nhcs_session cookie is missing", () => {
-		expect(getAppSession({ cookieHeader: null })).toBeNull();
-		expect(getAppSession({ cookieHeader: "other_cookie=value" })).toBeNull();
+		expect(appSessionPlatform.get({ cookieHeader: null })).toBeNull();
+		expect(
+			appSessionPlatform.get({ cookieHeader: "other_cookie=value" }),
+		).toBeNull();
 	});
 
 	it("returns null when nhcs_session cookie value is invalid", () => {
 		expect(
-			getAppSession({
+			appSessionPlatform.get({
 				cookieHeader: `${APP_SESSION_COOKIE_NAME}=not-a-signed-session`,
 			}),
 		).toBeNull();
 	});
 
 	it("returns null when signed nhcs_session cookie is tampered", () => {
-		const cookieValue = createAppSessionCookieValue({
+		const cookieValue = appSessionPlatform.createCookieValue({
 			accessId: "ACCESS-1",
 			accessToken: "token-1",
 			menuGroups: ["CORE"],
@@ -116,7 +127,7 @@ describe("App Session internal cookie", () => {
 		}`;
 
 		expect(
-			getAppSession({
+			appSessionPlatform.get({
 				cookieHeader: `${APP_SESSION_COOKIE_NAME}=${tamperedCookieValue}`,
 			}),
 		).toBeNull();
@@ -131,10 +142,10 @@ describe("App Session Legacy Cookies fallback", () => {
 			menuGroups: ["ESS"],
 			userId: "USER-1",
 			userLevel: "LEVEL-1",
-		} satisfies AppSession;
+		} satisfies AppSessionData;
 
 		expect(
-			getAppSession({
+			appSessionPlatform.get({
 				cookieHeader: createLegacyCookieHeaderForAppSession(appSession),
 			}),
 		).toEqual(appSession);
@@ -142,7 +153,7 @@ describe("App Session Legacy Cookies fallback", () => {
 
 	it("returns normalized menu groups from Legacy Cookies flags", () => {
 		expect(
-			getAppSession({
+			appSessionPlatform.get({
 				cookieHeader: createLegacyCookieHeader({
 					accessId: "ACCESS-1",
 					accessToken: "token-1",
@@ -169,18 +180,19 @@ describe("App Session Legacy Cookies fallback", () => {
 			menuGroups: ["CORE"],
 			userId: "INTERNAL-USER",
 			userLevel: "INTERNAL-LEVEL",
-		} satisfies AppSession;
+		} satisfies AppSessionData;
 		const legacySession = {
 			accessId: "LEGACY-ACCESS",
 			accessToken: "legacy-token",
 			menuGroups: ["ESS"],
 			userId: "LEGACY-USER",
 			userLevel: "LEGACY-LEVEL",
-		} satisfies AppSession;
-		const internalCookieValue = createAppSessionCookieValue(internalSession);
+		} satisfies AppSessionData;
+		const internalCookieValue =
+			appSessionPlatform.createCookieValue(internalSession);
 
 		expect(
-			getAppSession({
+			appSessionPlatform.get({
 				cookieHeader: `${APP_SESSION_COOKIE_NAME}=${internalCookieValue}; ${createLegacyCookieHeaderForAppSession(legacySession)}`,
 			}),
 		).toEqual(internalSession);
@@ -193,10 +205,10 @@ describe("App Session Legacy Cookies fallback", () => {
 			menuGroups: ["ESS"],
 			userId: "USER-1",
 			userLevel: "LEVEL-1",
-		} satisfies AppSession;
+		} satisfies AppSessionData;
 
 		expect(
-			getAppSession({
+			appSessionPlatform.get({
 				cookieHeader: `${APP_SESSION_COOKIE_NAME}=not-a-signed-session; ${createLegacyCookieHeaderForAppSession(legacySession)}`,
 			}),
 		).toEqual(legacySession);
@@ -204,9 +216,9 @@ describe("App Session Legacy Cookies fallback", () => {
 
 	it("returns null when a Legacy Cookie value is invalid", () => {
 		expect(
-			getAppSession({
+			appSessionPlatform.get({
 				cookieHeader: [
-					`${legacyCookieBaseNames.accessId}${legacyCookieSuffix}=not-a-signed-cookie`,
+					`${legacyCookieBaseNames.accessId}${envConfig.legacyCookieSuffix}=not-a-signed-cookie`,
 					createLegacyCookieHeader({
 						accessToken: "token-1",
 						fgCore: "F",
@@ -227,14 +239,14 @@ describe("App Session Legacy Cookies fallback", () => {
 			menuGroups: ["ESS"],
 			userId: "USER-1",
 			userLevel: "LEVEL-1",
-		} satisfies AppSession;
+		} satisfies AppSessionData;
 		const cookieHeader = createLegacyCookieHeaderForAppSession(legacySession);
 		const tamperedCookieHeader = `${cookieHeader.slice(0, -1)}${
 			cookieHeader.endsWith("a") ? "b" : "a"
 		}`;
 
 		expect(
-			getAppSession({
+			appSessionPlatform.get({
 				cookieHeader: tamperedCookieHeader,
 			}),
 		).toBeNull();
@@ -242,7 +254,7 @@ describe("App Session Legacy Cookies fallback", () => {
 
 	it("returns null when a required Legacy Cookie is missing", () => {
 		expect(
-			getAppSession({
+			appSessionPlatform.get({
 				cookieHeader: createLegacyCookieHeader({
 					accessId: "ACCESS-1",
 					accessToken: "token-1",
@@ -253,5 +265,31 @@ describe("App Session Legacy Cookies fallback", () => {
 				}),
 			}),
 		).toBeNull();
+	});
+});
+
+describe("App Session cookie protocol", () => {
+	it("lists app-owned and known Legacy Cookies for session cleanup", () => {
+		expect(appSessionPlatform.getSessionCookieNames()).toEqual([
+			APP_SESSION_COOKIE_NAME,
+			"Xyc02D92LQ_TEST",
+			"ZTn5qC8jA0_TEST",
+			"dXc83nF0p_TEST",
+			"Qm8LxK01w_TEST",
+			"P0bMlqK31_TEST",
+			"JzXkT8cV2_TEST",
+			"mKcLw923X_TEST",
+			"RfT23qX8n_TEST",
+			"Gr9eYd0wZ_TEST",
+			"bZtLkX92n_TEST",
+		]);
+	});
+
+	it("lists only app-owned cookie when Legacy Cookie suffix is missing", () => {
+		envConfig.legacyCookieSuffix = "";
+
+		expect(appSessionPlatform.getSessionCookieNames()).toEqual([
+			APP_SESSION_COOKIE_NAME,
+		]);
 	});
 });

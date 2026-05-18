@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiBusinessError } from "#/shared/platform/backend-boundary/api.errors";
+import { ApiBusinessError } from "#/shared/platform/backend-boundary/backend-boundary.protocol";
 import type { GetAuthenticationMenusInput } from "./authentication.types";
 
 const { privateGetMock } = vi.hoisted(() => ({
@@ -27,11 +27,11 @@ vi.mock("@tanstack/react-start/ssr-rpc", () => ({
 	},
 }));
 
-vi.mock("#/shared/platform/backend-boundary/api.server", () => ({
-	api: {
-		private: {
+vi.mock("#/shared/platform/backend-boundary/backend-boundary", () => ({
+	BackendBoundary: class {
+		readonly private = {
 			get: privateGetMock,
-		},
+		};
 	},
 }));
 

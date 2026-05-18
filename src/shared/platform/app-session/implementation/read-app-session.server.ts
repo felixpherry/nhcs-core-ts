@@ -1,8 +1,6 @@
 import { getRequestHeader } from "@tanstack/react-start/server";
-import {
-	APP_SESSION_COOKIE_NAME,
-	type GetAppSessionOptions,
-} from "../app-session.contract";
+import type { GetAppSessionOptions } from "../app-session.contract";
+import { APP_SESSION_COOKIE_NAME } from "../app-session.protocol";
 import type { AppSession } from "../app-session.types";
 import { getCookieValue } from "./cookie-header";
 import { readLegacyCookiesAppSession } from "./legacy-cookies.server";

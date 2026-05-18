@@ -1,7 +1,5 @@
-import type { SessionExpiryAcknowledgementListener } from "./session-expiry-acknowledgement.contract";
-
-export const SESSION_EXPIRY_ACKNOWLEDGEMENT_STORAGE_KEY =
-	"nhcs.session-expiry-acknowledgement.pending";
+import { SESSION_EXPIRY_ACKNOWLEDGEMENT_STORAGE_KEY } from "../session-expiry-acknowledgement.protocol";
+import type { SessionExpiryAcknowledgementListener } from "../session-expiry-acknowledgement.types";
 
 const pendingStorageValue = "pending";
 

@@ -1,4 +1,4 @@
-import type { PublicJsonOptions } from "../api.types";
+import type { PublicJsonOptions } from "../backend-boundary.types";
 
 /** Builds JSON request headers while preserving caller-provided header overrides. */
 export function buildJsonHeaders(

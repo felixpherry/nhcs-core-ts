@@ -1,4 +1,4 @@
-import type { ApiErrorDiagnostics } from "./api.types";
+import type { ApiErrorDiagnostics } from "./backend-boundary.types";
 
 /** Represents backend business-rule failure carried by Backend Envelope. */
 export class ApiBusinessError<TPayload = unknown> extends Error {

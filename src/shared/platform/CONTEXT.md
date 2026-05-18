@@ -32,6 +32,7 @@ _Avoid_: Immediate kick-out, silent redirect
 
 - A **Backend Boundary** normalizes a **Backend Envelope** before module code receives data.
 - An **App Session** may be created from **Legacy Cookies**.
+- **App Session** owns the app-owned and **Legacy Cookies** names that carry session continuity.
 - **Backend Session Headers** are derived from an **App Session**.
 - **Session Expiry Acknowledgement** happens when the backend rejects an existing **App Session**; missing cookies redirect to authentication immediately because no session can be judged.
 - Modules depend on the **Backend Boundary**, not direct backend endpoints.

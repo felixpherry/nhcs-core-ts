@@ -1,5 +1,5 @@
 import type { AppSession } from "../../app-session/app-session.types";
-import type { PublicJsonOptions } from "../api.types";
+import type { PublicJsonOptions } from "../backend-boundary.types";
 
 /** Builds NHCS Backend Session Headers from normalized App Session. */
 export function buildBackendSessionHeaders(
