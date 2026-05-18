@@ -4,27 +4,27 @@ import { APP_SESSION_COOKIE_NAME } from "../app-session.protocol";
 export const legacyCookieBaseNames = {
 	accessId: "Xyc02D92LQ",
 	accessToken: "ZTn5qC8jA0",
+	refreshToken: "RfT23qX8n",
+	userGroup: "Gr9eYd0wZ",
+	userId: "dXc83nF0p",
+	userLevel: "Qm8LxK01w",
+	userName: "bZtLkX92n",
 	fgCore: "P0bMlqK31",
 	fgEss: "JzXkT8cV2",
 	fgMss: "mKcLw923X",
-	userId: "dXc83nF0p",
-	userLevel: "Qm8LxK01w",
 } as const;
 
 export type LegacyCookieField = keyof typeof legacyCookieBaseNames;
 
-const legacySessionCookieBaseNames = [
-	legacyCookieBaseNames.accessId,
-	legacyCookieBaseNames.accessToken,
-	legacyCookieBaseNames.userId,
-	legacyCookieBaseNames.userLevel,
-	legacyCookieBaseNames.fgCore,
-	legacyCookieBaseNames.fgEss,
-	legacyCookieBaseNames.fgMss,
-	"RfT23qX8n",
-	"Gr9eYd0wZ",
-	"bZtLkX92n",
-] as const;
+export const legacyAppSessionCookieFields = [
+	"accessId",
+	"accessToken",
+	"userId",
+	"userLevel",
+	"fgCore",
+	"fgEss",
+	"fgMss",
+] as const satisfies readonly LegacyCookieField[];
 
 /** Returns app-owned and Legacy Cookie names that carry session continuity. */
 export function getSessionCookieNames(): readonly string[] {
@@ -46,5 +46,7 @@ function getLegacySessionCookieNames(): readonly string[] {
 		return [];
 	}
 
-	return legacySessionCookieBaseNames.map((baseName) => `${baseName}${suffix}`);
+	return Object.values(legacyCookieBaseNames).map(
+		(baseName) => `${baseName}${suffix}`,
+	);
 }

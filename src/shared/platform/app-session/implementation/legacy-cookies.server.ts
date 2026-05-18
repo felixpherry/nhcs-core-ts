@@ -6,10 +6,12 @@ import { getCookieValue } from "./cookie-header";
 import {
 	getLegacyCookieName,
 	type LegacyCookieField,
-	legacyCookieBaseNames,
+	legacyAppSessionCookieFields,
 } from "./legacy-cookie-names.server";
 
-type LegacyCookieValues = Record<LegacyCookieField, string | null>;
+type LegacyAppSessionCookieField =
+	(typeof legacyAppSessionCookieFields)[number];
+type LegacyCookieValues = Record<LegacyAppSessionCookieField, string | null>;
 
 type LegacyCookieConfig = {
 	readonly cookieNameSuffix: string;
@@ -63,9 +65,9 @@ function readLegacyCookieValues(
 	config: LegacyCookieConfig,
 ): LegacyCookieValues {
 	return Object.fromEntries(
-		Object.keys(legacyCookieBaseNames).map((field) => [
+		legacyAppSessionCookieFields.map((field) => [
 			field,
-			readLegacyCookieValue(cookieHeader, field as LegacyCookieField, config),
+			readLegacyCookieValue(cookieHeader, field, config),
 		]),
 	) as LegacyCookieValues;
 }
@@ -96,14 +98,17 @@ function readLegacyCookieValue(
 function getMenuGroupsFromLegacyFlags(
 	legacyValues: LegacyCookieValues,
 ): AppSessionMenuGroup[] {
-	return [
+	const menuGroupFlags = [
 		["fgEss", "ESS"],
 		["fgMss", "MSS"],
 		["fgCore", "CORE"],
-	].flatMap(([field, menuGroup]) =>
-		legacyValues[field as LegacyCookieField] === "T"
-			? [menuGroup as AppSessionMenuGroup]
-			: [],
+	] as const satisfies readonly (readonly [
+		LegacyAppSessionCookieField,
+		AppSessionMenuGroup,
+	])[];
+
+	return menuGroupFlags.flatMap(([field, menuGroup]) =>
+		legacyValues[field] === "T" ? [menuGroup] : [],
 	);
 }
 

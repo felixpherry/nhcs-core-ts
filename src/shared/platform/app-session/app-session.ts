@@ -10,6 +10,9 @@ export class AppSession implements AppSessionContract {
 	readonly createCookieValue: AppSessionContract["createCookieValue"] =
 		this.implementation.createCookieValue;
 
+	readonly createLegacyCookieHeaders: AppSessionContract["createLegacyCookieHeaders"] =
+		this.implementation.createLegacyCookieHeaders;
+
 	readonly getSessionCookieNames: AppSessionContract["getSessionCookieNames"] =
 		this.implementation.getSessionCookieNames;
 }

@@ -1,4 +1,7 @@
-import type { AppSession as AppSessionData } from "./app-session.types";
+import type {
+	AppSession as AppSessionData,
+	LegacySessionCookieInput,
+} from "./app-session.types";
 
 export type GetAppSessionOptions = {
 	readonly cookieHeader?: string | null;
@@ -27,6 +30,23 @@ export interface AppSessionContract {
 	 * - throws when App Session secret is not configured
 	 */
 	createCookieValue(appSession: AppSessionData): string;
+
+	/**
+	 * Creates Set-Cookie headers for all legacy NHCS authentication cookies.
+	 *
+	 * Contract:
+	 * - emits the full legacy cookie set: accessId, accessToken, refreshToken,
+	 *   userGroup, userId, userLevel, userName, fgCore, fgEss, and fgMss
+	 * - uses legacy cookie names plus configured COOKIE_NAME_SUFFIX
+	 * - encodes values as base64 JSON strings and signs with COOKIE_SECRET
+	 * - preserves legacy empty-value defaults: non-flags become "null", flags become "F"
+	 * - uses legacy cookie attributes: Max-Age=86400, HttpOnly, SameSite=Lax,
+	 *   Path=/, configured parent domain, and Secure in production
+	 * - throws when COOKIE_NAME_SUFFIX or COOKIE_SECRET is not configured
+	 */
+	createLegacyCookieHeaders(
+		legacyCookies: LegacySessionCookieInput,
+	): readonly string[];
 
 	/**
 	 * Lists app-owned and Legacy Cookie names that carry session continuity.

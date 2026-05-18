@@ -4,13 +4,18 @@ import type { AppSession as AppSessionData } from "./app-session.types";
 
 const { envConfig } = vi.hoisted(() => ({
 	envConfig: {
+		appEnv: "development",
 		legacyCookieSecret: "test-legacy-cookie-secret",
 		legacyCookieSuffix: "_TEST",
+		parentDomainCookie: ".example.test",
 	},
 }));
 
 vi.mock("#/env", () => ({
 	env: {
+		get APP_ENV() {
+			return envConfig.appEnv;
+		},
 		get COOKIE_NAME_SUFFIX() {
 			return envConfig.legacyCookieSuffix;
 		},
@@ -18,6 +23,9 @@ vi.mock("#/env", () => ({
 			return envConfig.legacyCookieSecret;
 		},
 		NHCS_SESSION_SECRET: "test-session-secret-at-least-32-characters",
+		get PARENT_DOMAIN_COOKIE() {
+			return envConfig.parentDomainCookie;
+		},
 	},
 }));
 
@@ -27,17 +35,23 @@ import { APP_SESSION_COOKIE_NAME } from "./app-session.protocol";
 const appSessionPlatform = new AppSession();
 
 afterEach(() => {
+	envConfig.appEnv = "development";
+	envConfig.legacyCookieSecret = "test-legacy-cookie-secret";
 	envConfig.legacyCookieSuffix = "_TEST";
+	envConfig.parentDomainCookie = ".example.test";
 });
 
 const legacyCookieBaseNames = {
 	accessId: "Xyc02D92LQ",
 	accessToken: "ZTn5qC8jA0",
+	refreshToken: "RfT23qX8n",
+	userGroup: "Gr9eYd0wZ",
+	userId: "dXc83nF0p",
+	userLevel: "Qm8LxK01w",
+	userName: "bZtLkX92n",
 	fgCore: "P0bMlqK31",
 	fgEss: "JzXkT8cV2",
 	fgMss: "mKcLw923X",
-	userId: "dXc83nF0p",
-	userLevel: "Qm8LxK01w",
 } as const;
 
 type LegacyCookieField = keyof typeof legacyCookieBaseNames;
@@ -79,6 +93,31 @@ function signLegacyCookieValue(value: string): string {
 		.replace(/=+$/, "");
 
 	return `${payload}.${signature}`;
+}
+
+function cookieHeaderFromSetCookieHeaders(headers: readonly string[]): string {
+	return headers.map((header) => header.split(";")[0]).join("; ");
+}
+
+function getSetCookieName(header: string): string {
+	return decodeURIComponent(header.slice(0, header.indexOf("=")));
+}
+
+function readLegacySetCookieValue(header: string): string {
+	const cookiePair = header.split(";")[0];
+	const encodedSignedValue = cookiePair.slice(cookiePair.indexOf("=") + 1);
+	const signedValue = decodeURIComponent(encodedSignedValue);
+	const separatorIndex = signedValue.lastIndexOf(".");
+	const payload = signedValue.slice(0, separatorIndex);
+	const signature = signedValue.slice(separatorIndex + 1);
+	const expectedSignature = createHmac("sha256", envConfig.legacyCookieSecret)
+		.update(payload)
+		.digest("base64")
+		.replace(/=+$/, "");
+
+	expect(signature).toBe(expectedSignature);
+
+	return JSON.parse(Buffer.from(payload, "base64").toString("utf8"));
 }
 
 describe("App Session internal cookie", () => {
@@ -274,15 +313,100 @@ describe("App Session cookie protocol", () => {
 			APP_SESSION_COOKIE_NAME,
 			"Xyc02D92LQ_TEST",
 			"ZTn5qC8jA0_TEST",
+			"RfT23qX8n_TEST",
+			"Gr9eYd0wZ_TEST",
 			"dXc83nF0p_TEST",
 			"Qm8LxK01w_TEST",
+			"bZtLkX92n_TEST",
 			"P0bMlqK31_TEST",
 			"JzXkT8cV2_TEST",
 			"mKcLw923X_TEST",
+		]);
+	});
+
+	it("creates the full legacy cookie set using legacy signing and attributes", () => {
+		const headers = appSessionPlatform.createLegacyCookieHeaders({
+			accessId: "ACCESS-1",
+			accessToken: "token-1",
+			refreshToken: "refresh-1",
+			userGroup: "GROUP-1",
+			userId: "USER-1",
+			userLevel: "LEVEL-1",
+			userName: "Name 1",
+			fgCore: "T",
+			fgEss: "F",
+			fgMss: "T",
+		});
+
+		expect(headers.map(getSetCookieName)).toEqual([
+			"Xyc02D92LQ_TEST",
+			"ZTn5qC8jA0_TEST",
 			"RfT23qX8n_TEST",
 			"Gr9eYd0wZ_TEST",
+			"dXc83nF0p_TEST",
+			"Qm8LxK01w_TEST",
 			"bZtLkX92n_TEST",
+			"P0bMlqK31_TEST",
+			"JzXkT8cV2_TEST",
+			"mKcLw923X_TEST",
 		]);
+		expect(headers[0]).toContain("Max-Age=86400");
+		expect(headers[0]).toContain("Path=/");
+		expect(headers[0]).toContain("Domain=.example.test");
+		expect(headers[0]).toContain("HttpOnly");
+		expect(headers[0]).toContain("SameSite=Lax");
+		expect(headers[0]).not.toContain("Secure");
+		expect(readLegacySetCookieValue(headers[0])).toBe("ACCESS-1");
+		expect(readLegacySetCookieValue(headers[2])).toBe("refresh-1");
+
+		expect(
+			appSessionPlatform.get({
+				cookieHeader: cookieHeaderFromSetCookieHeaders(headers),
+			}),
+		).toEqual({
+			accessId: "ACCESS-1",
+			accessToken: "token-1",
+			menuGroups: ["MSS", "CORE"],
+			userId: "USER-1",
+			userLevel: "LEVEL-1",
+		});
+	});
+
+	it("preserves legacy defaults for empty cookie values", () => {
+		const headers = appSessionPlatform.createLegacyCookieHeaders({
+			accessId: "",
+			accessToken: null,
+			refreshToken: null,
+			userGroup: null,
+			userId: null,
+			userLevel: null,
+			userName: null,
+			fgCore: null,
+			fgEss: null,
+			fgMss: null,
+		});
+
+		expect(readLegacySetCookieValue(headers[0])).toBe("null");
+		expect(readLegacySetCookieValue(headers[7])).toBe("F");
+	});
+
+	it("marks legacy cookies secure in production", () => {
+		envConfig.appEnv = "production";
+
+		const headers = appSessionPlatform.createLegacyCookieHeaders({
+			accessId: "ACCESS-1",
+			accessToken: "token-1",
+			refreshToken: "refresh-1",
+			userGroup: "GROUP-1",
+			userId: "USER-1",
+			userLevel: "LEVEL-1",
+			userName: "Name 1",
+			fgCore: "T",
+			fgEss: "F",
+			fgMss: "T",
+		});
+
+		expect(headers[0]).toContain("Secure");
 	});
 
 	it("lists only app-owned cookie when Legacy Cookie suffix is missing", () => {
