@@ -1,3 +1,5 @@
+import type { Flag } from "../../types";
+
 export type AppSessionMenuGroup = "ESS" | "MSS" | "CORE";
 
 export type AppSession = {
@@ -8,8 +10,6 @@ export type AppSession = {
 	readonly userLevel: string;
 };
 
-export type LegacySessionCookieFlag = "T" | "F";
-
 export type LegacySessionCookieInput = {
 	readonly accessId: string | null;
 	readonly accessToken: string | null;
@@ -18,7 +18,7 @@ export type LegacySessionCookieInput = {
 	readonly userId: string | null;
 	readonly userLevel: string | null;
 	readonly userName: string | null;
-	readonly fgCore: LegacySessionCookieFlag | null;
-	readonly fgEss: LegacySessionCookieFlag | null;
-	readonly fgMss: LegacySessionCookieFlag | null;
+	readonly fgCore: Flag | null;
+	readonly fgEss: Flag | null;
+	readonly fgMss: Flag | null;
 };
