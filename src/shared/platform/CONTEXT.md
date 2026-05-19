@@ -13,7 +13,7 @@ The NHCS backend response wrapper that reports success, authorization, message, 
 _Avoid_: Raw API response, plain JSON
 
 **App Session**:
-The normalized session shape this app uses after reading either internal session cookies or legacy shared cookies.
+The normalized session shape this app uses after reading either internal session cookies or legacy shared cookies, including user identity and enabled module groups.
 _Avoid_: Auth store, cookie bag
 
 **Legacy Cookies**:
@@ -28,12 +28,38 @@ _Avoid_: Auth headers, token headers
 The user-visible acknowledgement step required after an in-page session expiry before redirecting to authentication.
 _Avoid_: Immediate kick-out, silent redirect
 
+**Session Establishment**:
+Successful authentication that creates an **App Session** plus **Legacy Cookies** without placing tokens in browser-visible storage.
+_Avoid_: Client token storage, local session
+
+**Continue Destination**:
+A same-origin post-authentication destination captured when an unauthenticated user tries to open a protected page.
+_Avoid_: External redirect URL, returnUrl
+
+**Authentication Result**:
+A client-safe summary of successful authentication containing user identity and enabled module groups, but no tokens.
+_Avoid_: Login payload, token response
+
+**Logout Destination**:
+The server-selected post-logout location used after local and legacy session cookies are cleared.
+_Avoid_: Client-decided logout URL, hardcoded logout path
+
+**Mutation Idempotency Key**:
+A per-submit-attempt key sent with a mutation request so repeated submits do not repeat backend side effects.
+_Avoid_: Form ID, request ID
+
 ## Relationships
 
 - A **Backend Boundary** normalizes a **Backend Envelope** before module code receives data.
 - An **App Session** may be created from **Legacy Cookies**.
 - **App Session** owns the app-owned and **Legacy Cookies** names that carry session continuity.
+- **App Session** may include display identity such as user name and group, but browser-facing results must not expose backend tokens.
 - **Backend Session Headers** are derived from an **App Session**.
+- **Session Establishment** creates both an **App Session** and **Legacy Cookies** for cross-app continuity.
+- **Session Establishment** returns an **Authentication Result** to the browser while secrets remain in httpOnly cookies.
+- **Continue Destination** is used after **Session Establishment** when present and safe; otherwise navigation falls back to `/` and lets the private landing route decide module placement.
+- **Logout Destination** is selected by the server after logout so environment-specific cross-app behavior is not hardcoded in UI code.
+- A **Mutation Idempotency Key** is reused only while one submit attempt is pending; retries use a fresh key.
 - **Session Expiry Acknowledgement** happens when the backend rejects an existing **App Session**; missing cookies redirect to authentication immediately because no session can be judged.
 - Modules depend on the **Backend Boundary**, not direct backend endpoints.
 
@@ -46,3 +72,4 @@ _Avoid_: Immediate kick-out, silent redirect
 
 - "Session" can mean raw legacy cookie values or normalized app state — resolved: use **Legacy Cookies** for raw shared cookies and **App Session** for normalized app state.
 - "Session expired" can mean backend-rejected existing cookies or missing cookies — resolved: missing cookies redirect immediately; existing cookies are judged only by the first backend call, which may trigger **Session Expiry Acknowledgement**.
+- "continue" must mean same-origin **Continue Destination**, not arbitrary URL — resolved: reject external destinations.

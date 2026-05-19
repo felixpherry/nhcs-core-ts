@@ -2,15 +2,41 @@ import type { z } from "zod";
 import type {
 	authenticationMenuGroupSchema,
 	getAuthenticationMenusInputSchema,
+	loginAuthenticationInputSchema,
 } from "./authentication.schema";
 
 export type AuthenticationMenuGroup = z.infer<
 	typeof authenticationMenuGroupSchema
 >;
 
+export type LoginAuthenticationInput = z.infer<
+	typeof loginAuthenticationInputSchema
+>;
+
 export type GetAuthenticationMenusInput = z.infer<
 	typeof getAuthenticationMenusInputSchema
 >;
+
+export type AuthenticationResult = {
+	readonly menuGroups: readonly AuthenticationMenuGroup[];
+	readonly userGroup?: string;
+	readonly userId: string;
+	readonly userLevel: string;
+	readonly userName?: string;
+};
+
+export type AuthenticationLoginBackendResult = {
+	readonly accessId: string;
+	readonly accessToken: string;
+	readonly fgCore?: "T" | "F" | null;
+	readonly fgEss?: "T" | "F" | null;
+	readonly fgMss?: "T" | "F" | null;
+	readonly refreshToken?: string | null;
+	readonly userGroup?: string | null;
+	readonly userId: string;
+	readonly userLevel: string;
+	readonly userName?: string | null;
+};
 
 export type AuthenticationMenuFeature = {
 	readonly featureId?: number;

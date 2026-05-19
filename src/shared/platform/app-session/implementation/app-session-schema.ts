@@ -5,8 +5,10 @@ const appSessionSchema = z.object({
 	accessId: nonEmptyString(),
 	accessToken: nonEmptyString(),
 	menuGroups: z.array(z.enum(["ESS", "MSS", "CORE"])),
+	userGroup: nonEmptyString().optional(),
 	userId: nonEmptyString(),
 	userLevel: nonEmptyString(),
+	userName: nonEmptyString().optional(),
 });
 
 /** Validates unknown data as normalized App Session and throws on invalid shape. */

@@ -212,6 +212,32 @@ describe("App Session Legacy Cookies fallback", () => {
 		});
 	});
 
+	it("preserves display identity from Legacy Cookies when available", () => {
+		expect(
+			appSessionPlatform.get({
+				cookieHeader: createLegacyCookieHeader({
+					accessId: "ACCESS-1",
+					accessToken: "token-1",
+					fgCore: "T",
+					fgEss: "F",
+					fgMss: "T",
+					userGroup: "GROUP-1",
+					userId: "USER-1",
+					userLevel: "LEVEL-1",
+					userName: "Name 1",
+				}),
+			}),
+		).toEqual({
+			accessId: "ACCESS-1",
+			accessToken: "token-1",
+			menuGroups: ["MSS", "CORE"],
+			userGroup: "GROUP-1",
+			userId: "USER-1",
+			userLevel: "LEVEL-1",
+			userName: "Name 1",
+		});
+	});
+
 	it("prefers valid nhcs_session cookie over valid Legacy Cookies", () => {
 		const internalSession = {
 			accessId: "INTERNAL-ACCESS",
@@ -367,8 +393,10 @@ describe("App Session cookie protocol", () => {
 			accessId: "ACCESS-1",
 			accessToken: "token-1",
 			menuGroups: ["MSS", "CORE"],
+			userGroup: "GROUP-1",
 			userId: "USER-1",
 			userLevel: "LEVEL-1",
+			userName: "Name 1",
 		});
 	});
 

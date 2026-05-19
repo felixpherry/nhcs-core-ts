@@ -6,8 +6,10 @@ export type AppSession = {
 	readonly accessId: string;
 	readonly accessToken: string;
 	readonly menuGroups: readonly AppSessionMenuGroup[];
+	readonly userGroup?: string;
 	readonly userId: string;
 	readonly userLevel: string;
+	readonly userName?: string;
 };
 
 export type LegacySessionCookieInput = {

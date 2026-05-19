@@ -16,6 +16,7 @@ export interface AppSessionContract {
 	 * - falls back to valid Legacy Cookies when nhcs_session is missing or unusable
 	 * - returns null when no valid App Session can be read
 	 * - exposes normalized menuGroups for navlink rendering
+	 * - preserves display identity fields, userName and userGroup, when available
 	 * - reads current request cookies by default
 	 * - accepts explicit Cookie header for tests/server adapters
 	 */

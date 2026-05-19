@@ -26,6 +26,11 @@ export const legacyAppSessionCookieFields = [
 	"fgMss",
 ] as const satisfies readonly LegacyCookieField[];
 
+export const legacyOptionalAppSessionCookieFields = [
+	"userGroup",
+	"userName",
+] as const satisfies readonly LegacyCookieField[];
+
 /** Returns app-owned and Legacy Cookie names that carry session continuity. */
 export function getSessionCookieNames(): readonly string[] {
 	return [APP_SESSION_COOKIE_NAME, ...getLegacySessionCookieNames()];

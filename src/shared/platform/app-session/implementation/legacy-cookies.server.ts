@@ -7,11 +7,18 @@ import {
 	getLegacyCookieName,
 	type LegacyCookieField,
 	legacyAppSessionCookieFields,
+	legacyOptionalAppSessionCookieFields,
 } from "./legacy-cookie-names.server";
 
 type LegacyAppSessionCookieField =
 	(typeof legacyAppSessionCookieFields)[number];
+type LegacyOptionalAppSessionCookieField =
+	(typeof legacyOptionalAppSessionCookieFields)[number];
 type LegacyCookieValues = Record<LegacyAppSessionCookieField, string | null>;
+type LegacyOptionalCookieValues = Record<
+	LegacyOptionalAppSessionCookieField,
+	string | null
+>;
 
 type LegacyCookieConfig = {
 	readonly cookieNameSuffix: string;
@@ -33,18 +40,26 @@ export function readLegacyCookiesAppSession(
 	}
 
 	const legacyValues = readLegacyCookieValues(cookieHeader, config);
+	const optionalLegacyValues = readOptionalLegacyCookieValues(
+		cookieHeader,
+		config,
+	);
 
 	if (Object.values(legacyValues).some(isMissingLegacyValue)) {
 		return null;
 	}
 
-	return safeParseAppSession({
-		accessId: legacyValues.accessId,
-		accessToken: legacyValues.accessToken,
-		menuGroups: getMenuGroupsFromLegacyFlags(legacyValues),
-		userId: legacyValues.userId,
-		userLevel: legacyValues.userLevel,
-	});
+	return safeParseAppSession(
+		withoutUndefinedProperties({
+			accessId: legacyValues.accessId,
+			accessToken: legacyValues.accessToken,
+			menuGroups: getMenuGroupsFromLegacyFlags(legacyValues),
+			userGroup: normalizeOptionalLegacyValue(optionalLegacyValues.userGroup),
+			userId: legacyValues.userId,
+			userLevel: legacyValues.userLevel,
+			userName: normalizeOptionalLegacyValue(optionalLegacyValues.userName),
+		}),
+	);
 }
 
 /** Reads required Legacy Cookie compatibility config when present and usable. */
@@ -70,6 +85,18 @@ function readLegacyCookieValues(
 			readLegacyCookieValue(cookieHeader, field, config),
 		]),
 	) as LegacyCookieValues;
+}
+
+function readOptionalLegacyCookieValues(
+	cookieHeader: string,
+	config: LegacyCookieConfig,
+): LegacyOptionalCookieValues {
+	return Object.fromEntries(
+		legacyOptionalAppSessionCookieFields.map((field) => [
+			field,
+			readLegacyCookieValue(cookieHeader, field, config),
+		]),
+	) as LegacyOptionalCookieValues;
 }
 
 /** Reads one verified Legacy Cookie field from the Cookie header. */
@@ -162,4 +189,24 @@ function isMissingLegacyValue(value: unknown): boolean {
 	return (
 		typeof value !== "string" || value.trim().length === 0 || value === "null"
 	);
+}
+
+function normalizeOptionalLegacyValue(
+	value: string | null | undefined,
+): string | undefined {
+	if (typeof value !== "string" || isMissingLegacyValue(value)) {
+		return undefined;
+	}
+
+	return value;
+}
+
+function withoutUndefinedProperties<TObject extends Record<string, unknown>>(
+	value: TObject,
+): TObject {
+	return Object.fromEntries(
+		Object.entries(value).filter(
+			([, propertyValue]) => propertyValue !== undefined,
+		),
+	) as TObject;
 }
