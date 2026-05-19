@@ -187,6 +187,34 @@ body {
 	-moz-osx-font-smoothing: grayscale;
 }
 
+#nprogress {
+	pointer-events: none;
+}
+
+#nprogress .bar {
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: 1100;
+	height: 3px;
+	width: 100%;
+	background: var(--lagoon-deep);
+	box-shadow: 0 0 12px color-mix(in oklab, var(--lagoon-deep) 56%, white);
+}
+
+#nprogress .peg {
+	display: block;
+	position: absolute;
+	right: 0;
+	width: 100px;
+	height: 100%;
+	opacity: 1;
+	transform: rotate(3deg) translate(0, -4px);
+	box-shadow:
+		0 0 10px var(--lagoon-deep),
+		0 0 5px var(--lagoon-deep);
+}
+
 body::before {
 	content: "";
 	position: fixed;

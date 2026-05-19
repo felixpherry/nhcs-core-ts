@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
+import { NavigationProgress } from "../shared/platform/navigation-progress/navigation-progress";
 import appCss from "../styles.css?url";
 
 interface MyRouterContext {
@@ -44,6 +45,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<HeadContent />
 			</head>
 			<body>
+				<NavigationProgress />
 				{children}
 				<TanStackDevtools
 					config={{
