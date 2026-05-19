@@ -16,9 +16,11 @@ import type {
 	AuthenticationResult,
 	GetAuthenticationMenusInput,
 	LoginAuthenticationInput,
+	LogoutAuthenticationResult,
 } from "./authentication.types";
 
 const AUTHENTICATION_LOGIN_BACKEND_PATH = "/authentication/api/auth/login";
+const AUTHENTICATION_LOGOUT_BACKEND_PATH = "/authentication/api/auth/logout";
 const AUTHENTICATION_MENU_BACKEND_PATH = "/authentication/api/auth/menu";
 const sessionCookieMaxAgeSeconds = 86_400;
 const zeroInitializationVector = Buffer.alloc(16, 0);
@@ -46,6 +48,27 @@ export async function establishAuthenticationSession(
 	writeSessionCookies(backendResult);
 
 	return mapBackendLoginResultToAuthenticationResult(backendResult);
+}
+
+export async function clearAuthenticationSession(): Promise<LogoutAuthenticationResult> {
+	const appSession = appSessionPlatform.get();
+
+	if (appSession) {
+		await backendBoundary.private.post(
+			`${AUTHENTICATION_LOGOUT_BACKEND_PATH}?id=${encodeURIComponent(appSession.accessId)}`,
+		);
+	}
+
+	setResponseHeader(
+		"Set-Cookie",
+		appSessionPlatform
+			.getSessionCookieNames()
+			.map((cookieName) => serializeClearedCookieHeader(cookieName)),
+	);
+
+	return {
+		destination: env.HCPLUS_LOGOUT_URL ?? "/authentication",
+	};
 }
 
 export function readCurrentAuthenticationSession(): AuthenticationResult | null {
@@ -115,6 +138,24 @@ function serializeAppSessionCookieHeader(cookieValue: string): string {
 		`Max-Age=${sessionCookieMaxAgeSeconds}`,
 		"Path=/",
 	];
+
+	if (env.PARENT_DOMAIN_COOKIE) {
+		parts.push(`Domain=${env.PARENT_DOMAIN_COOKIE}`);
+	}
+
+	parts.push("HttpOnly");
+
+	if (env.APP_ENV === "production") {
+		parts.push("Secure");
+	}
+
+	parts.push("SameSite=Lax");
+
+	return parts.join("; ");
+}
+
+function serializeClearedCookieHeader(cookieName: string): string {
+	const parts = [`${encodeURIComponent(cookieName)}=`, "Max-Age=0", "Path=/"];
 
 	if (env.PARENT_DOMAIN_COOKIE) {
 		parts.push(`Domain=${env.PARENT_DOMAIN_COOKIE}`);

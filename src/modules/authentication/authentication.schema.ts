@@ -10,6 +10,8 @@ export const loginAuthenticationInputSchema = z.object({
 	userId: z.string().trim().min(4).max(100),
 });
 
+export const logoutAuthenticationInputSchema = z.object({});
+
 export const getAuthenticationMenusInputSchema = z.object({
 	menuGroup: authenticationMenuGroupSchema,
 });

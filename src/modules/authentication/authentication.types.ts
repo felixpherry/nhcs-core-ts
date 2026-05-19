@@ -25,6 +25,30 @@ export type AuthenticationResult = {
 	readonly userName?: string;
 };
 
+export type LoginAuthenticationFieldErrors = {
+	readonly password?: readonly string[];
+	readonly userId?: readonly string[];
+};
+
+export type LoginAuthenticationFailure = {
+	readonly fieldErrors?: LoginAuthenticationFieldErrors;
+	readonly formError: string;
+	readonly ok: false;
+};
+
+export type LoginAuthenticationSuccess = {
+	readonly authentication: AuthenticationResult;
+	readonly ok: true;
+};
+
+export type LoginAuthenticationOutcome =
+	| LoginAuthenticationFailure
+	| LoginAuthenticationSuccess;
+
+export type LogoutAuthenticationResult = {
+	readonly destination: string;
+};
+
 export type AuthenticationLoginBackendResult = {
 	readonly accessId: string;
 	readonly accessToken: string;

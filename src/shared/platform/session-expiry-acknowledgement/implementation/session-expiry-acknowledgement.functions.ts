@@ -1,11 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
+import { clearExpiredSessionCookies } from "./session-expiry-acknowledgement.server";
 
 export const acknowledgeExpiredSession = createServerFn({
 	method: "POST",
 }).handler(async () => {
-	const { clearExpiredSessionCookies } = await import(
-		"./session-expiry-acknowledgement.server"
-	);
-
 	return clearExpiredSessionCookies();
 });

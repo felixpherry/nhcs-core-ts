@@ -8,6 +8,7 @@ export const env = createEnv({
 		AUTH_SECRET: z.string().min(16).optional(),
 		COOKIE_NAME_SUFFIX: z.string().min(1).optional(),
 		COOKIE_SECRET: z.string().min(1).optional(),
+		HCPLUS_LOGOUT_URL: z.url().optional(),
 		NHCS_SESSION_SECRET: z.string().min(32).optional(),
 		PARENT_DOMAIN_COOKIE: z.string().min(1).optional(),
 	},
